@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule | Faculty Management Platform</title>
+<script>
+  if (localStorage.getItem("facultyLoggedIn") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
+<style>
+:root{
+  --primary:#d98449;--primary-dark:#b9662f;--gold:#e8b35c;
+  --dark:#24201d;--dark-2:#332c27;--background:#f7f3ee;
+  --card:#ffffff;--text:#29251f;--muted:#7a7068;--border:#e8dfd4;
+  --danger:#c0392b;--success:#2e8b57;--info:#3a7bd5;--violet:#7b4fb8;
+  --shadow:0 6px 20px rgba(36,32,29,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--background);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button,input,select{font-family:inherit}
+
+/* ---------- Sidebar ---------- */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--dark);color:#e9e0d6;display:flex;flex-direction:column;padding:22px 16px;z-index:100;transition:transform .3s}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.sb-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--gold));display:grid;place-items:center;font-size:22px}
+.sb-brand h3{font-size:15px;line-height:1.2}
+.nav{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;color:#cfc4b8;transition:.2s}
+.nav a span.ic{width:22px;text-align:center;font-size:16px}
+.nav a:hover{background:var(--dark-2);color:#fff;transform:translateX(3px)}
+.nav a.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 6px 14px rgba(217,132,73,.35)}
+.nav .logout{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;border-radius:0;color:#f0a79d}
+.nav .logout:hover{background:transparent;color:#ff8f80}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ---------- Main + topbar ---------- */
+.main{margin-left:250px;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:80;background:rgba(247,243,238,.92);backdrop-filter:blur(8px);display:flex;align-items:center;gap:16px;padding:14px 30px;border-bottom:1px solid var(--border)}
+.menu-btn{display:none;background:var(--dark);color:#fff;border:none;width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer}
+.top-title{font-weight:600;font-size:15px;color:var(--muted)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.bell{position:relative}
+.bell-btn{background:#fff;border:1.5px solid var(--border);width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;transition:.2s}
+.bell-btn:hover{border-color:var(--primary)}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.dropdown{display:none;position:absolute;right:0;top:52px;width:320px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(36,32,29,.18);overflow:hidden}
+.dropdown.show{display:block}
+.dropdown header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.notif{padding:12px 16px;border-bottom:1px solid #f3ece3;font-size:13px;line-height:1.4}
+.notif.unread{background:#fdf6ee}
+.notif small{color:var(--muted);display:block;margin-top:3px}
+.user{display:flex;align-items:center;gap:11px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.user b{display:block;font-size:14px}
+.user small{color:var(--muted);font-size:12px}
+
+.content{padding:28px 30px 40px}
+.page-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-head h1{font-size:26px}
+.page-head p{color:var(--muted);font-size:14px;margin-top:4px}
+
+.btn{padding:11px 20px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:.25s}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 8px 18px rgba(217,132,73,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 22px rgba(217,132,73,.4)}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-dark:hover{background:var(--primary-dark)}
+.btn-light{background:#fff;border:1.5px solid var(--border);color:var(--text)}
+.btn-light:hover{background:var(--background)}
+.btn-danger{background:#fdecea;color:var(--danger);border:1.5px solid #f5c6c0}
+.btn-danger:hover{background:var(--danger);color:#fff}
+
+/* ---------- Summary ---------- */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.sum{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);transition:.25s}
+.sum:hover{transform:translateY(-3px)}
+.sum b{font-size:24px;display:block}
+.sum span{color:var(--muted);font-size:13px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:var(--shadow);margin-bottom:22px}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.card-head h2{font-size:18px}
+.card-head small{color:var(--muted);font-size:13px}
+
+/* ---------- Today timeline ---------- */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.slot{position:relative;padding:14px 16px;border-radius:14px;background:#fcfaf7;border:1px solid var(--border);margin-bottom:12px;cursor:pointer;transition:.2s;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.slot:last-child{margin-bottom:0}
+.slot:hover{border-color:var(--primary);transform:translateX(4px)}
+.slot::before{content:"";position:absolute;left:-24px;top:50%;margin-top:-7px;width:14px;height:14px;border-radius:50%;background:var(--primary);border:3px solid #fff;box-shadow:0 0 0 2px var(--primary)}
+.slot.Completed::before{background:#b9b0a5;box-shadow:0 0 0 2px #b9b0a5}
+.slot.Ongoing{border-color:var(--success);background:#f1faf5}
+.slot.Ongoing::before{background:var(--success);box-shadow:0 0 0 2px var(--success)}
+.slot .t{font-size:13px;color:var(--primary-dark);font-weight:700}
+.slot .n{font-size:16px;font-weight:600;margin:2px 0}
+.slot small{color:var(--muted)}
+.state{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.state.Completed{background:#efeae3;color:var(--muted)}
+.state.Ongoing{background:#e6f6ec;color:var(--success)}
+.state.Upcoming{background:#fdf1d9;color:#a8741a}
+.note{background:#fdf6ee;border:1px dashed var(--primary);border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:16px}
+.empty{text-align:center;color:var(--muted);padding:34px 16px}
+.empty span{font-size:38px;display:block;margin-bottom:8px}
+
+/* ---------- Weekly timetable ---------- */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-1px}
+.l-Lecture{background:#fdeede;border:1px solid var(--primary)}
+.l-Lab{background:#e6f0fc;border:1px solid var(--info)}
+.l-Review{background:#e6f6ec;border:1px solid var(--success)}
+.l-Meeting{background:#f0e8fa;border:1px solid var(--violet)}
+.grid-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px}
+table{width:100%;border-collapse:collapse;min-width:900px;table-layout:fixed}
+th{background:#faf5ee;padding:13px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid #f3ece3}
+th.today{background:var(--primary);color:#fff}
+th:first-child,td.time{width:110px}
+td{padding:8px;border-bottom:1px solid #f3ece3;border-right:1px solid #f3ece3;height:84px;vertical-align:top}
+td:last-child,th:last-child{border-right:none}
+tr:last-child td{border-bottom:none}
+td.time{background:#faf5ee;font-size:12px;font-weight:700;color:var(--muted);vertical-align:middle;text-align:center}
+td.todaycol{background:#fffaf4}
+td.blank{cursor:pointer;transition:.2s}
+td.blank:hover{background:#fdf1e4}
+td.blank:hover::after{content:"＋ Add";display:grid;place-items:center;height:100%;color:var(--primary-dark);font-size:12px;font-weight:700}
+tr.lunch td{height:40px;background:repeating-linear-gradient(45deg,#faf5ee,#faf5ee 10px,#f5ede2 10px,#f5ede2 20px);text-align:center;vertical-align:middle;font-size:13px;color:var(--muted);cursor:default}
+tr.lunch td.time{background:#faf5ee}
+.cls{height:100%;border-radius:10px;padding:8px 10px;cursor:pointer;transition:.2s;font-size:12px;line-height:1.35;border-left:4px solid}
+.cls:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(36,32,29,.14)}
+.cls b{display:block;font-size:13px;margin-bottom:2px}
+.cls small{display:block;color:var(--muted)}
+.cls.Lecture{background:#fdeede;border-color:var(--primary)}
+.cls.Lab{background:#e6f0fc;border-color:var(--info)}
+.cls.Review{background:#e6f6ec;border-color:var(--success)}
+.cls.Meeting{background:#f0e8fa;border-color:var(--violet)}
+
+/* ---------- Mobile day view ---------- */
+.mobile-view{display:none}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:12px}
+.tab{padding:9px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
+.tab.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.m-item{border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;border-left:5px solid}
+.m-item.Lecture{background:#fdeede;border-color:var(--primary)}
+.m-item.Lab{background:#e6f0fc;border-color:var(--info)}
+.m-item.Review{background:#e6f6ec;border-color:var(--success)}
+.m-item.Meeting{background:#f0e8fa;border-color:var(--violet)}
+.m-item .t{font-size:12px;font-weight:700;color:var(--muted)}
+.m-item b{display:block;font-size:15px;margin:2px 0}
+.m-item small{color:var(--muted)}
+
+/* ---------- Modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(36,32,29,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:150}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 26px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-head h3{font-size:19px}
+.close{background:#f3ece3;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px}
+.close:hover{background:var(--danger);color:#fff}
+.modal-body{padding:24px 26px}
+.modal-foot{padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field input,.field select{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none;transition:.2s}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15);background:#fff}
+.field input.invalid,.field select.invalid{border-color:var(--danger)}
+.field .err{color:var(--danger);font-size:12px;margin-top:4px;min-height:14px}
+.full{grid-column:1/-1}
+.detail-hero{border-radius:16px;padding:20px;margin-bottom:16px;color:#fff;background:linear-gradient(120deg,#24201d,#4a3a2e 70%,#b9662f 160%)}
+.detail-hero h2{font-size:21px;margin-bottom:4px}
+.detail-hero small{color:#e3d9cd}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail-grid div{background:#fcfaf7;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.detail-grid small{display:block;color:var(--muted);font-size:12px;margin-bottom:2px}
+.detail-grid b{font-size:15px}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:.3s;z-index:300}
+.toast.show{transform:none;opacity:1}
+.toast.ok{background:var(--success)}
+.toast.bad{background:var(--danger)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1100px){.summary{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:992px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .overlay.show{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+}
+@media (max-width:760px){
+  .grid-wrap{display:none}
+  .mobile-view{display:block}
+  .legend{margin-bottom:12px}
+}
+@media (max-width:640px){
+  .form-grid,.detail-grid{grid-template-columns:1fr}
+  .user div,.top-title{display:none}
+  .dropdown{width:280px;right:-60px}
+  .page-head .btn{width:100%}
+  .card{padding:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">🎓</div>
+    <div><h3>Faculty Management<br>Platform</h3></div>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="ic">🏠</span>Dashboard</a>
+    <a href="faculty-profile.html"><span class="ic">👤</span>My Profile</a>
+    <a href="courses.html"><span class="ic">📚</span>Courses</a>
+    <a href="students.html"><span class="ic">🧑‍🎓</span>Students</a>
+    <a href="attendance.html"><span class="ic">✅</span>Attendance</a>
+    <a href="assignments.html"><span class="ic">📝</span>Assignments</a>
+    <a href="schedule.html" class="active"><span class="ic">🗓️</span>Schedule</a>
+    <a href="announcements.html"><span class="ic">📢</span>Announcements</a>
+    <a href="reports.html"><span class="ic">📊</span>Reports</a>
+    <a href="#" class="logout" id="logoutBtn"><span class="ic">🚪</span>Logout</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="top-title">Faculty Timetable</div>
+    <div class="top-right">
+      <div class="bell">
+        <button class="bell-btn" id="bellBtn">🔔</button>
+        <span class="badge" id="badge">0</span>
+        <div class="dropdown" id="dropdown"><header>Notifications</header><div id="notifList"></div></div>
+      </div>
+      <div class="user">
+        <div class="avatar" id="topAvatar">DP</div>
+        <div><b id="topName">Dr. Priya</b><small id="topDept">CSE Department</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="page-head">
+      <div>
+        <h1>Schedule</h1>
+        <p>Your daily timeline and weekly timetable. Click any class for details.</p>
+      </div>
+      <button class="btn btn-primary" id="addBtn">＋ Add Class</button>
+    </div>
+
+    <section class="summary">
+      <div class="sum"><b id="sWeek">0</b><span>Sessions This Week</span></div>
+      <div class="sum"><b id="sToday">0</b><span>Sessions Today</span></div>
+      <div class="sum"><b id="sLabs">0</b><span>Lab Sessions</span></div>
+      <div class="sum"><b id="sClasses">0</b><span>Classes Handled</span></div>
+    </section>
+
+    <!-- Today's schedule -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Today's Schedule</h2>
+        <small id="todayDate"></small>
+      </div>
+      <div id="todayArea"></div>
+    </section>
+
+    <!-- Weekly timetable -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Weekly Timetable</h2>
+        <div class="legend">
+          <span><i class="l-Lecture"></i>Lecture</span>
+          <span><i class="l-Lab"></i>Lab</span>
+          <span><i class="l-Review"></i>Review</span>
+          <span><i class="l-Meeting"></i>Meeting</span>
+        </div>
+      </div>
+
+      <div class="grid-wrap">
+        <table>
+          <thead id="gridHead"></thead>
+          <tbody id="gridBody"></tbody>
+        </table>
+      </div>
+
+      <div class="mobile-view">
+        <div class="tabs" id="dayTabs"></div>
+        <div id="mobileList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal" id="formModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="formTitle">Add Class</h3><button class="close" data-close="formModal">×</button></div>
+    <form id="classForm" novalidate>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field full"><label for="fCourse">Course / Activity</label><input type="text" id="fCourse" list="courseList" placeholder="e.g. Web Technology"><datalist id="courseList"></datalist><div class="err" id="e-fCourse"></div></div>
+          <div class="field"><label for="fDay">Day</label><select id="fDay"></select></div>
+          <div class="field"><label for="fTime">Time</label><select id="fTime"></select></div>
+          <div class="field"><label for="fClass">Class</label><input type="text" id="fClass" list="classList" placeholder="e.g. CSE A"><datalist id="classList"></datalist><div class="err" id="e-fClass"></div></div>
+          <div class="field"><label for="fRoom">Room</label><input type="text" id="fRoom" placeholder="e.g. Room 301"><div class="err" id="e-fRoom"></div></div>
+          <div class="field full"><label for="fType">Type</label>
+            <select id="fType"><option>Lecture</option><option>Lab</option><option>Review</option><option>Meeting</option></select>
+            <div class="err" id="e-fTime"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-light" data-close="formModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Class</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Details modal -->
+<div class="modal" id="viewModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Class Details</h3><button class="close" data-close="viewModal">×</button></div>
+    <div class="modal-body" id="viewBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="delBtn">Delete</button>
+      <button class="btn btn-light" id="editBtn">Edit</button>
+      <button class="btn btn-dark" id="attBtn">Mark Attendance</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Data ---------- */
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const slots = [
+    {t:"09:00 AM"},{t:"10:00 AM"},{t:"11:00 AM"},{t:"12:00 PM"},
+    {t:"01:00 PM", lunch:true},
+    {t:"02:00 PM"},{t:"03:00 PM"},{t:"04:00 PM"}
+  ];
+
+  const defaultSchedule = [
+    {id:1,day:"Monday",time:"09:00 AM",course:"Web Technology",className:"CSE A",room:"Room 301",type:"Lecture"},
+    {id:2,day:"Monday",time:"11:00 AM",course:"Database Management",className:"CSE B",room:"Room 204",type:"Lecture"},
+    {id:3,day:"Monday",time:"02:00 PM",course:"Programming Lab",className:"CSE A",room:"Lab 2",type:"Lab"},
+    {id:4,day:"Monday",time:"04:00 PM",course:"Project Review",className:"Final Year",room:"Seminar Hall",type:"Review"},
+    {id:5,day:"Tuesday",time:"09:00 AM",course:"Object Oriented Programming",className:"CSE A",room:"Room 305",type:"Lecture"},
+    {id:6,day:"Tuesday",time:"10:00 AM",course:"Computer Networks",className:"CSE C",room:"Room 210",type:"Lecture"},
+    {id:7,day:"Tuesday",time:"02:00 PM",course:"Cloud Computing",className:"CSE B",room:"Room 402",type:"Lecture"},
+    {id:8,day:"Wednesday",time:"09:00 AM",course:"Web Technology",className:"CSE A",room:"Room 301",type:"Lecture"},
+    {id:9,day:"Wednesday",time:"11:00 AM",course:"Software Engineering",className:"CSE A",room:"Room 303",type:"Lecture"},
+    {id:10,day:"Wednesday",time:"03:00 PM",course:"Database Management",className:"CSE B",room:"Room 204",type:"Lecture"},
+    {id:11,day:"Thursday",time:"10:00 AM",course:"Object Oriented Programming",className:"CSE A",room:"Room 305",type:"Lecture"},
+    {id:12,day:"Thursday",time:"11:00 AM",course:"Computer Networks",className:"CSE C",room:"Room 210",type:"Lecture"},
+    {id:13,day:"Thursday",time:"02:00 PM",course:"Programming Lab",className:"CSE A",room:"Lab 2",type:"Lab"},
+    {id:14,day:"Friday",time:"09:00 AM",course:"Cloud Computing",className:"CSE B",room:"Room 402",type:"Lecture"},
+    {id:15,day:"Friday",time:"10:00 AM",course:"Software Engineering",className:"CSE A",room:"Room 303",type:"Lecture"},
+    {id:16,day:"Friday",time:"03:00 PM",course:"Department Meeting",className:"Faculty",room:"Staff Room",type:"Meeting"},
+    {id:17,day:"Saturday",time:"09:00 AM",course:"Web Technology Lab",className:"CSE A",room:"Lab 3",type:"Lab"},
+    {id:18,day:"Saturday",time:"11:00 AM",course:"Project Review",className:"Final Year",room:"Seminar Hall",type:"Review"}
+  ];
+
+  function load(key, fallback) {
+    try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+  let schedule = load("facultySchedule", defaultSchedule);
+  const courses = load("facultyCourses", []);
+  const students = load("facultyStudents", []);
+  const profile = load("facultyProfile", {fullName:"Dr. Priya Raman", department:"Computer Science and Engineering"});
+  function saveSchedule() { localStorage.setItem("facultySchedule", JSON.stringify(schedule)); }
+
+  const $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function showToast(msg, type) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + (type || "");
+    setTimeout(function () { t.classList.remove("show"); }, 2400);
+  }
+
+  /* ---------- Time helpers ---------- */
+  function toMin(label) {
+    const m = label.match(/(\d+):(\d+)\s*(AM|PM)/);
+    let h = Number(m[1]) % 12;
+    if (m[3] === "PM") h += 12;
+    return h * 60 + Number(m[2]);
+  }
+  function fromMin(total) {
+    let h = Math.floor(total / 60), mm = total % 60;
+    const ap = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0") + " " + ap;
+  }
+  function range(label) { return label + " – " + fromMin(toMin(label) + 60); }
+  function slotIndex(label) { return slots.findIndex(function (s) { return s.t === label; }); }
+
+  const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const now = new Date();
+  const todayName = dayNames[now.getDay()];
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  /* ---------- Top bar ---------- */
+  const facInitials = profile.fullName.split(" ").filter(function (p) { return p && p.indexOf(".") === -1; }).slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase();
+  $("topAvatar").textContent = facInitials || "FM";
+  $("topName").textContent = profile.fullName;
+  $("topDept").textContent = profile.department.replace("Computer Science and Engineering", "CSE Department");
+
+  let notifications = [];
+  try { notifications = JSON.parse(localStorage.getItem("facultyNotifications")) || []; } catch (e) {}
+  const unread = notifications.filter(function (n) { return !n.read; }).length;
+  $("badge").textContent = unread;
+  $("badge").style.display = unread ? "grid" : "none";
+  $("notifList").innerHTML = notifications.length ? notifications.map(function (n) {
+    return '<div class="notif ' + (n.read ? "" : "unread") + '">' + esc(n.text) + '<small>' + esc(n.time) + '</small></div>';
+  }).join("") : '<div class="notif">No notifications yet.</div>';
+  $("bellBtn").addEventListener("click", function (e) { e.stopPropagation(); $("dropdown").classList.toggle("show"); });
+  $("dropdown").addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { $("dropdown").classList.remove("show"); });
+
+  /* ---------- Helpers for data ---------- */
+  function itemsOn(day) {
+    return schedule.filter(function (s) { return s.day === day; })
+      .sort(function (a, b) { return toMin(a.time) - toMin(b.time); });
+  }
+  function itemAt(day, time) {
+    return schedule.find(function (s) { return s.day === day && s.time === time; });
+  }
+
+  /* ---------- Render: summary ---------- */
+  function renderSummary() {
+    $("sWeek").textContent = schedule.length;
+    $("sToday").textContent = schedule.filter(function (s) { return s.day === todayName; }).length;
+    $("sLabs").textContent = schedule.filter(function (s) { return s.type === "Lab"; }).length;
+    $("sClasses").textContent = new Set(schedule.map(function (s) { return s.className; })).size;
+  }
+
+  /* ---------- Render: today ---------- */
+  function renderToday() {
+    $("todayDate").textContent = now.toLocaleDateString("en-IN", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+    let showDay = todayName;
+    let html = "";
+    let isToday = true;
+
+    if (todayName === "Sunday") {
+      showDay = "Monday";
+      isToday = false;
+      html += '<div class="note">🌿 No classes today (Sunday). Here is your schedule for Monday.</div>';
+    }
+    const list = itemsOn(showDay);
+    if (!list.length) {
+      html += '<div class="empty"><span>🎉</span>No sessions scheduled on ' + showDay + '.</div>';
+    } else {
+      html += '<div class="timeline">' + list.map(function (s) {
+        const start = toMin(s.time);
+        let state = "Upcoming";
+        if (isToday) {
+          if (nowMin >= start + 60) state = "Completed";
+          else if (nowMin >= start) state = "Ongoing";
+        }
+        return '<div class="slot ' + (isToday ? state : "") + '" data-id="' + s.id + '">' +
+          '<div><div class="t">' + range(s.time) + '</div><div class="n">' + esc(s.course) + '</div><small>' + esc(s.className) + ' • ' + esc(s.room) + '</small></div>' +
+          (isToday ? '<span class="state ' + state + '">' + state + '</span>' : '<span class="state Upcoming">' + s.type + '</span>') +
+        '</div>';
+      }).join("") + '</div>';
+    }
+    $("todayArea").innerHTML = html;
+  }
+
+  /* ---------- Render: weekly grid ---------- */
+  function renderGrid() {
+    $("gridHead").innerHTML = '<tr><th>Time</th>' + days.map(function (d) {
+      return '<th class="' + (d === todayName ? "today" : "") + '">' + d + '</th>';
+    }).join("") + '</tr>';
+
+    $("gridBody").innerHTML = slots.map(function (sl) {
+      if (sl.lunch) {
+        return '<tr class="lunch"><td class="time">' + sl.t + '</td><td colspan="6">🍽️ Lunch Break</td></tr>';
+      }
+      return '<tr><td class="time">' + sl.t + '</td>' + days.map(function (d) {
+        const it = itemAt(d, sl.t);
+        const tc = d === todayName ? " todaycol" : "";
+        if (it) {
+          return '<td class="' + tc.trim() + '"><div class="cls ' + it.type + '" data-id="' + it.id + '">' +
+            '<b>' + esc(it.course) + '</b><small>' + esc(it.className) + '</small><small>' + esc(it.room) + '</small></div></td>';
+        }
+        return '<td class="blank' + tc + '" data-day="' + d + '" data-time="' + sl.t + '"></td>';
+      }).join("") + '</tr>';
+    }).join("");
+  }
+
+  /* ---------- Render: mobile day view ---------- */
+  let mobileDay = todayName === "Sunday" ? "Monday" : todayName;
+  function renderMobile() {
+    $("dayTabs").innerHTML = days.map(function (d) {
+      return '<button class="tab ' + (d === mobileDay ? "on" : "") + '" data-day="' + d + '">' + d.slice(0, 3) + '</button>';
+    }).join("");
+    const list = itemsOn(mobileDay);
+    $("mobileList").innerHTML = list.length ? list.map(function (s) {
+      return '<div class="m-item ' + s.type + '" data-id="' + s.id + '"><div class="t">' + range(s.time) + '</div><b>' + esc(s.course) + '</b><small>' + esc(s.className) + ' • ' + esc(s.room) + '</small></div>';
+    }).join("") : '<div class="empty"><span>🎉</span>No sessions on ' + mobileDay + '.</div>';
+  }
+
+  function renderAll() { renderSummary(); renderToday(); renderGrid(); renderMobile(); }
+
+  /* ---------- Modals ---------- */
+  function openModal(id) { $(id).classList.add("show"); }
+  function closeModal(id) { $(id).classList.remove("show"); }
+  document.querySelectorAll("[data-close]").forEach(function (b) {
+    b.addEventListener("click", function () { closeModal(b.dataset.close); });
+  });
+  document.querySelectorAll(".modal").forEach(function (m) {
+    m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("show"); });
+  });
+
+  /* ---------- Details ---------- */
+  let viewingId = null;
+  function openView(id) {
+    const s = schedule.find(function (x) { return x.id === id; });
+    if (!s) return;
+    viewingId = id;
+    $("viewBody").innerHTML =
+      '<div class="detail-hero"><h2>' + esc(s.course) + '</h2><small>' + esc(s.type) + ' session</small></div>' +
+      '<div class="detail-grid">' +
+        '<div><small>Day</small><b>' + s.day + '</b></div>' +
+        '<div><small>Time</small><b>' + range(s.time) + '</b></div>' +
+        '<div><small>Class</small><b>' + esc(s.className) + '</b></div>' +
+        '<div><small>Room</small><b>' + esc(s.room) + '</b></div>' +
+      '</div>';
+    $("attBtn").style.display = (s.type === "Lecture" || s.type === "Lab") ? "" : "none";
+    openModal("viewModal");
+  }
+
+  $("attBtn").addEventListener("click", function () {
+    const s = schedule.find(function (x) { return x.id === viewingId; });
+    const course = s && courses.find(function (c) { return s.course.toLowerCase().indexOf(c.name.toLowerCase()) === 0; });
+    window.location.href = "attendance.html" + (course ? "?course=" + course.id : "");
+  });
+  $("editBtn").addEventListener("click", function () {
+    const s = schedule.find(function (x) { return x.id === viewingId; });
+    closeModal("viewModal");
+    if (s) openForm(s);
+  });
+  $("delBtn").addEventListener("click", function () {
+    const s = schedule.find(function (x) { return x.id === viewingId; });
+    if (s && confirm('Delete "' + s.course + '" on ' + s.day + ' at ' + s.time + '?')) {
+      schedule = schedule.filter(function (x) { return x.id !== viewingId; });
+      saveSchedule();
+      closeModal("viewModal");
+      renderAll();
+      showToast("Class deleted.", "bad");
+    }
+  });
+
+  /* ---------- Add / Edit ---------- */
+  let editingId = null;
+  $("fDay").innerHTML = days.map(function (d) { return '<option>' + d + '</option>'; }).join("");
+  $("fTime").innerHTML = slots.filter(function (s) { return !s.lunch; }).map(function (s) { return '<option>' + s.t + '</option>'; }).join("");
+  $("courseList").innerHTML = courses.map(function (c) { return '<option value="' + esc(c.name) + '">'; }).join("");
+  const classSet = Array.from(new Set(students.map(function (s) { return s.className; }).concat(courses.map(function (c) { return c.className; }), schedule.map(function (s) { return s.className; }))));
+  $("classList").innerHTML = classSet.map(function (c) { return '<option value="' + esc(c) + '">'; }).join("");
+
+  const errFields = ["fCourse","fClass","fRoom","fTime"];
+  function setErr(id, msg) {
+    $("e-" + id).textContent = msg;
+    if (id !== "fTime") $(id).classList.toggle("invalid", !!msg);
+    return !msg;
+  }
+
+  function openForm(s, day, time) {
+    errFields.forEach(function (f) { setErr(f, ""); });
+    editingId = s ? s.id : null;
+    $("formTitle").textContent = s ? "Edit Class" : "Add Class";
+    $("saveBtn").textContent = s ? "Update Class" : "Save Class";
+    $("fCourse").value = s ? s.course : "";
+    $("fDay").value = s ? s.day : (day || "Monday");
+    $("fTime").value = s ? s.time : (time || "09:00 AM");
+    $("fClass").value = s ? s.className : "";
+    $("fRoom").value = s ? s.room : "";
+    $("fType").value = s ? s.type : "Lecture";
+    openModal("formModal");
+  }
+  $("addBtn").addEventListener("click", function () { openForm(null); });
+
+  $("classForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const course = $("fCourse").value.trim();
+    const cls = $("fClass").value.trim();
+    const room = $("fRoom").value.trim();
+    const day = $("fDay").value;
+    const time = $("fTime").value;
+
+    let ok = true;
+    ok = setErr("fCourse", course.length < 2 ? "Enter the course or activity name." : "") && ok;
+    ok = setErr("fClass", !cls ? "Enter the class (e.g. CSE A)." : "") && ok;
+    ok = setErr("fRoom", !room ? "Enter the room." : "") && ok;
+    const clash = schedule.find(function (s) { return s.day === day && s.time === time && s.id !== editingId; });
+    ok = setErr("fTime", clash ? "Time clash: " + clash.course + " is already scheduled on " + day + " at " + time + "." : "") && ok;
+    if (!ok) return;
+
+    const data = {day: day, time: time, course: course, className: cls, room: room, type: $("fType").value};
+    if (editingId) {
+      schedule = schedule.map(function (s) { return s.id === editingId ? Object.assign({id: s.id}, data) : s; });
+      showToast("Class updated.", "ok");
+    } else {
+      const newId = schedule.reduce(function (m, s) { return Math.max(m, s.id); }, 0) + 1;
+      schedule.push(Object.assign({id: newId}, data));
+      showToast("Class added to timetable.", "ok");
+    }
+    saveSchedule();
+    closeModal("formModal");
+    renderAll();
+  });
+
+  /* ---------- Click handlers ---------- */
+  $("gridBody").addEventListener("click", function (e) {
+    const cls = e.target.closest(".cls");
+    if (cls) { openView(Number(cls.dataset.id)); return; }
+    const blank = e.target.closest("td.blank");
+    if (blank) openForm(null, blank.dataset.day, blank.dataset.time);
+  });
+  $("todayArea").addEventListener("click", function (e) {
+    const slot = e.target.closest(".slot");
+    if (slot) openView(Number(slot.dataset.id));
+  });
+  $("mobileList").addEventListener("click", function (e) {
+    const it = e.target.closest(".m-item");
+    if (it) openView(Number(it.dataset.id));
+  });
+  $("dayTabs").addEventListener("click", function (e) {
+    const tab = e.target.closest(".tab");
+    if (tab) { mobileDay = tab.dataset.day; renderMobile(); }
+  });
+
+  renderAll();
+
+  /* ---------- Mobile sidebar ---------- */
+  function toggleMenu(open) { $("sidebar").classList.toggle("open", open); $("overlay").classList.toggle("show", open); }
+  $("menuBtn").addEventListener("click", function () { toggleMenu(true); });
+  $("overlay").addEventListener("click", function () { toggleMenu(false); });
+
+  /* ---------- Logout ---------- */
+  $("logoutBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("facultyLoggedIn");
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faculty Login | Faculty Management Platform</title>
+<style>
+:root{
+  --primary:#d98449;
+  --primary-dark:#b9662f;
+  --gold:#e8b35c;
+  --dark:#24201d;
+  --background:#f7f3ee;
+  --card:#ffffff;
+  --text:#29251f;
+  --muted:#7a7068;
+  --border:#e8dfd4;
+  --danger:#c0392b;
+  --success:#2e8b57;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+  background:var(--background);
+  color:var(--text);
+  min-height:100vh;
+}
+.wrapper{display:grid;grid-template-columns:1.1fr 1fr;min-height:100vh}
+
+/* ---------- Left visual panel ---------- */
+.visual{
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#24201d 0%,#3a2f27 55%,#b9662f 140%);
+  color:#fff;padding:48px 56px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.visual::before,.visual::after{
+  content:"";position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(232,179,92,.35),transparent 70%);
+}
+.visual::before{width:420px;height:420px;top:-120px;right:-120px}
+.visual::after{width:360px;height:360px;bottom:-140px;left:-100px}
+.brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+.logo{
+  width:50px;height:50px;border-radius:14px;
+  background:linear-gradient(135deg,var(--primary),var(--gold));
+  display:grid;place-items:center;font-size:26px;
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
+}
+.brand h2{font-size:20px;letter-spacing:.3px}
+.brand small{color:#d8cdc0;font-size:12px}
+.hero{position:relative;z-index:1}
+.hero h1{font-size:38px;line-height:1.2;margin-bottom:14px}
+.hero h1 span{color:var(--gold)}
+.hero p{color:#e3d9cd;max-width:460px;line-height:1.6;margin-bottom:28px}
+.illustration{
+  position:relative;max-width:440px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(6px);
+  border-radius:20px;padding:22px;
+}
+.illustration .row{display:flex;gap:12px;margin-bottom:12px}
+.mini{
+  flex:1;background:rgba(255,255,255,.1);border-radius:12px;padding:14px;
+  animation:float 4s ease-in-out infinite;
+}
+.mini:nth-child(2){animation-delay:.8s}
+.mini:nth-child(3){animation-delay:1.6s}
+.mini b{display:block;font-size:22px;color:var(--gold)}
+.mini span{font-size:12px;color:#e3d9cd}
+.bars{display:flex;align-items:flex-end;gap:8px;height:70px;margin-top:6px}
+.bars i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--gold),var(--primary))}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.visual footer{position:relative;z-index:1;font-size:12px;color:#cbbfb1}
+
+/* ---------- Right login panel ---------- */
+.panel{display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.login-card{
+  width:100%;max-width:430px;background:var(--card);
+  border-radius:22px;padding:38px 34px;
+  box-shadow:0 20px 50px rgba(36,32,29,.12);
+  border:1px solid var(--border);
+  animation:rise .6s ease both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.login-card h2{font-size:26px;margin-bottom:6px}
+.login-card .sub{color:var(--muted);margin-bottom:24px;font-size:14px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+.input-wrap{position:relative}
+.input-wrap input{
+  width:100%;padding:13px 44px 13px 14px;border-radius:12px;
+  border:1.5px solid var(--border);background:#fcfaf7;
+  font-size:15px;color:var(--text);transition:.25s;outline:none;
+}
+.input-wrap input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15);background:#fff}
+.input-wrap input.invalid{border-color:var(--danger)}
+.toggle{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:13px;
+  color:var(--primary-dark);font-weight:600;padding:4px 6px;
+}
+.error{color:var(--danger);font-size:12px;margin-top:5px;min-height:14px}
+.options{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;font-size:13px}
+.options label{display:flex;align-items:center;gap:7px;cursor:pointer}
+.options input{accent-color:var(--primary);width:16px;height:16px}
+.options a{color:var(--primary-dark);text-decoration:none;font-weight:600}
+.options a:hover{text-decoration:underline}
+.btn{
+  width:100%;padding:14px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;font-size:16px;font-weight:600;transition:.25s;
+  box-shadow:0 8px 18px rgba(217,132,73,.35);
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(217,132,73,.45)}
+.alert{
+  display:none;padding:11px 14px;border-radius:10px;margin-bottom:16px;
+  font-size:13px;background:#fdecea;color:var(--danger);border:1px solid #f5c6c0;
+}
+.alert.ok{background:#e8f6ee;color:var(--success);border-color:#bfe3cf}
+.demo{
+  margin-top:22px;padding:14px 16px;border-radius:12px;
+  background:#fbf3e9;border:1px dashed var(--primary);font-size:13px;
+}
+.demo strong{display:block;margin-bottom:6px;color:var(--primary-dark)}
+.demo code{background:#fff;padding:2px 7px;border-radius:6px;border:1px solid var(--border)}
+.demo button{
+  margin-top:10px;background:var(--dark);color:#fff;border:none;
+  padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;transition:.2s;
+}
+.demo button:hover{background:var(--primary-dark)}
+
+/* ---------- Modal ---------- */
+.modal{
+  position:fixed;inset:0;background:rgba(36,32,29,.6);
+  display:none;align-items:center;justify-content:center;padding:20px;z-index:50;
+}
+.modal.show{display:flex}
+.modal-box{
+  background:#fff;border-radius:18px;padding:30px;width:100%;max-width:400px;
+  animation:rise .3s ease both;
+}
+.modal-box h3{margin-bottom:8px}
+.modal-box p{color:var(--muted);font-size:14px;margin-bottom:16px}
+.modal-box .row{display:flex;gap:10px;margin-top:6px}
+.btn-light{
+  flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);
+  background:#fff;cursor:pointer;font-size:14px;transition:.2s;
+}
+.btn-light:hover{background:var(--background)}
+.modal-box .btn{flex:1;width:auto;padding:12px;font-size:14px}
+
+/* ---------- Responsive ---------- */
+@media (max-width:960px){
+  .wrapper{grid-template-columns:1fr}
+  .visual{padding:32px 28px;min-height:auto}
+  .hero h1{font-size:28px}
+  .illustration{display:none}
+  .hero p{margin-bottom:0}
+  .visual footer{display:none}
+}
+@media (max-width:480px){
+  .login-card{padding:28px 22px}
+  .options{flex-direction:column;align-items:flex-start;gap:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- Left: Visual section -->
+  <section class="visual">
+    <div class="brand">
+      <div class="logo">🎓</div>
+      <div>
+        <h2>Faculty Management Platform</h2>
+        <small>Academic Excellence, Organised</small>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1>Manage your classes,<br>students &amp; <span>academics</span><br>in one place.</h1>
+      <p>Track attendance, publish assignments, plan your timetable and share announcements through one smart dashboard built for faculty.</p>
+
+      <div class="illustration">
+        <div class="row">
+          <div class="mini"><b>248</b><span>Students</span></div>
+          <div class="mini"><b>06</b><span>Courses</span></div>
+          <div class="mini"><b>87%</b><span>Attendance</span></div>
+        </div>
+        <div class="bars">
+          <i style="height:45%"></i><i style="height:70%"></i><i style="height:55%"></i>
+          <i style="height:85%"></i><i style="height:65%"></i><i style="height:92%"></i>
+          <i style="height:78%"></i>
+        </div>
+      </div>
+    </div>
+
+    <footer>&copy; 2026 Faculty Management Platform. All rights reserved.</footer>
+  </section>
+
+  <!-- Right: Login -->
+  <section class="panel">
+    <div class="login-card">
+      <h2>Welcome Back 👋</h2>
+      <p class="sub">Sign in to access your faculty dashboard.</p>
+
+      <div id="alertBox" class="alert"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">Email Address</label>
+          <div class="input-wrap">
+            <input type="email" id="email" placeholder="you@college.edu" autocomplete="username">
+          </div>
+          <div class="error" id="emailError"></div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+            <button type="button" class="toggle" id="togglePwd">Show</button>
+          </div>
+          <div class="error" id="passwordError"></div>
+        </div>
+
+        <div class="options">
+          <label><input type="checkbox" id="remember"> Remember me</label>
+          <a href="#" id="forgotLink">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn">Login to Dashboard</button>
+      </form>
+
+      <div class="demo">
+        <strong>Demo Login</strong>
+        Email: <code>priya@faculty.edu</code><br>
+        Password: <code>faculty123</code><br>
+        <button type="button" id="fillDemo">Fill demo details</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Forgot password modal -->
+<div class="modal" id="forgotModal">
+  <div class="modal-box">
+    <h3>Reset Password</h3>
+    <p>Enter your registered email. This is a demo, so no real email is sent.</p>
+    <div class="input-wrap" style="margin-bottom:6px">
+      <input type="email" id="resetEmail" placeholder="you@college.edu"
+             style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:14px;outline:none">
+    </div>
+    <div class="error" id="resetError"></div>
+    <div class="row">
+      <button type="button" class="btn-light" id="closeForgot">Cancel</button>
+      <button type="button" class="btn" id="sendReset">Send Link</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Demo credentials
+  const DEMO_EMAIL = "priya@faculty.edu";
+  const DEMO_PASSWORD = "faculty123";
+
+  const emailInput = document.getElementById("email");
+  const passInput = document.getElementById("password");
+  const emailError = document.getElementById("emailError");
+  const passError = document.getElementById("passwordError");
+  const alertBox = document.getElementById("alertBox");
+  const remember = document.getElementById("remember");
+
+  // Already logged in? Go straight to the dashboard
+  if (localStorage.getItem("facultyLoggedIn") === "true") {
+    window.location.href = "dashboard.html";
+  }
+
+  // Restore remembered email
+  const savedEmail = localStorage.getItem("facultyRememberedEmail");
+  if (savedEmail) {
+    emailInput.value = savedEmail;
+    remember.checked = true;
+  }
+
+  function showAlert(message, ok) {
+    alertBox.textContent = message;
+    alertBox.className = "alert" + (ok ? " ok" : "");
+    alertBox.style.display = "block";
+  }
+
+  function validEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  // Show / hide password
+  document.getElementById("togglePwd").addEventListener("click", function () {
+    const hidden = passInput.type === "password";
+    passInput.type = hidden ? "text" : "password";
+    this.textContent = hidden ? "Hide" : "Show";
+  });
+
+  // Fill demo details
+  document.getElementById("fillDemo").addEventListener("click", function () {
+    emailInput.value = DEMO_EMAIL;
+    passInput.value = DEMO_PASSWORD;
+    emailError.textContent = "";
+    passError.textContent = "";
+    emailInput.classList.remove("invalid");
+    passInput.classList.remove("invalid");
+    alertBox.style.display = "none";
+  });
+
+  // Login submit
+  document.getElementById("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    alertBox.style.display = "none";
+    emailError.textContent = "";
+    passError.textContent = "";
+    emailInput.classList.remove("invalid");
+    passInput.classList.remove("invalid");
+
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passInput.value;
+    let valid = true;
+
+    if (!email) {
+      emailError.textContent = "Email is required.";
+      emailInput.classList.add("invalid");
+      valid = false;
+    } else if (!validEmail(email)) {
+      emailError.textContent = "Please enter a valid email address.";
+      emailInput.classList.add("invalid");
+      valid = false;
+    }
+
+    if (!password) {
+      passError.textContent = "Password is required.";
+      passInput.classList.add("invalid");
+      valid = false;
+    } else if (password.length < 6) {
+      passError.textContent = "Password must be at least 6 characters.";
+      passInput.classList.add("invalid");
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      localStorage.setItem("facultyLoggedIn", "true");
+
+      if (remember.checked) {
+        localStorage.setItem("facultyRememberedEmail", email);
+      } else {
+        localStorage.removeItem("facultyRememberedEmail");
+      }
+
+      // Create default profile once so other pages can read it
+      if (!localStorage.getItem("facultyProfile")) {
+        localStorage.setItem("facultyProfile", JSON.stringify({
+          fullName: "Dr. Priya Raman",
+          facultyId: "FAC-CSE-1024",
+          email: DEMO_EMAIL,
+          phone: "+91 98765 43210",
+          department: "Computer Science and Engineering",
+          designation: "Associate Professor",
+          qualification: "Ph.D. in Computer Science",
+          experience: "12 Years",
+          joiningDate: "2014-06-15",
+          bio: "Associate Professor with a passion for teaching web technologies, databases and cloud computing. Mentors student projects and research in software engineering.",
+          skills: ["HTML", "CSS", "JavaScript", "Python", "Java", "SQL", "Cloud Computing"]
+        }));
+      }
+
+      showAlert("Login successful! Redirecting...", true);
+      setTimeout(function () {
+        window.location.href = "dashboard.html";
+      }, 700);
+    } else {
+      showAlert("Invalid email or password. Please use the demo login details.", false);
+    }
+  });
+
+  // Forgot password modal
+  const forgotModal = document.getElementById("forgotModal");
+  const resetEmail = document.getElementById("resetEmail");
+  const resetError = document.getElementById("resetError");
+
+  document.getElementById("forgotLink").addEventListener("click", function (e) {
+    e.preventDefault();
+    resetError.textContent = "";
+    resetEmail.value = emailInput.value;
+    forgotModal.classList.add("show");
+  });
+  document.getElementById("closeForgot").addEventListener("click", function () {
+    forgotModal.classList.remove("show");
+  });
+  forgotModal.addEventListener("click", function (e) {
+    if (e.target === forgotModal) forgotModal.classList.remove("show");
+  });
+  document.getElementById("sendReset").addEventListener("click", function () {
+    const value = resetEmail.value.trim();
+    if (!validEmail(value)) {
+      resetError.textContent = "Please enter a valid email address.";
+      return;
+    }
+    forgotModal.classList.remove("show");
+    showAlert("Password reset link sent to " + value + " (demo).", true);
+  });
+</script>
+</body>
+</html>

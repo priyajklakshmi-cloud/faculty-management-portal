@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements | Faculty Management Platform</title>
+<script>
+  if (localStorage.getItem("facultyLoggedIn") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
+<style>
+:root{
+  --primary:#d98449;--primary-dark:#b9662f;--gold:#e8b35c;
+  --dark:#24201d;--dark-2:#332c27;--background:#f7f3ee;
+  --card:#ffffff;--text:#29251f;--muted:#7a7068;--border:#e8dfd4;
+  --danger:#c0392b;--success:#2e8b57;--info:#3a7bd5;--violet:#7b4fb8;
+  --shadow:0 6px 20px rgba(36,32,29,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--background);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button,input,select,textarea{font-family:inherit}
+
+/* ---------- Sidebar ---------- */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--dark);color:#e9e0d6;display:flex;flex-direction:column;padding:22px 16px;z-index:100;transition:transform .3s}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.sb-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--gold));display:grid;place-items:center;font-size:22px}
+.sb-brand h3{font-size:15px;line-height:1.2}
+.nav{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;color:#cfc4b8;transition:.2s}
+.nav a span.ic{width:22px;text-align:center;font-size:16px}
+.nav a:hover{background:var(--dark-2);color:#fff;transform:translateX(3px)}
+.nav a.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 6px 14px rgba(217,132,73,.35)}
+.nav .logout{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;border-radius:0;color:#f0a79d}
+.nav .logout:hover{background:transparent;color:#ff8f80}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ---------- Main + topbar ---------- */
+.main{margin-left:250px;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:80;background:rgba(247,243,238,.92);backdrop-filter:blur(8px);display:flex;align-items:center;gap:16px;padding:14px 30px;border-bottom:1px solid var(--border)}
+.menu-btn{display:none;background:var(--dark);color:#fff;border:none;width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer}
+.top-title{font-weight:600;font-size:15px;color:var(--muted)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.bell{position:relative}
+.bell-btn{background:#fff;border:1.5px solid var(--border);width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;transition:.2s}
+.bell-btn:hover{border-color:var(--primary)}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.dropdown{display:none;position:absolute;right:0;top:52px;width:320px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(36,32,29,.18);overflow:hidden}
+.dropdown.show{display:block}
+.dropdown header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.notif{padding:12px 16px;border-bottom:1px solid #f3ece3;font-size:13px;line-height:1.4}
+.notif.unread{background:#fdf6ee}
+.notif small{color:var(--muted);display:block;margin-top:3px}
+.user{display:flex;align-items:center;gap:11px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.user b{display:block;font-size:14px}
+.user small{color:var(--muted);font-size:12px}
+
+.content{padding:28px 30px 40px}
+.page-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-head h1{font-size:26px}
+.page-head p{color:var(--muted);font-size:14px;margin-top:4px}
+
+.btn{padding:11px 20px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:.25s}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 8px 18px rgba(217,132,73,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 22px rgba(217,132,73,.4)}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-dark:hover{background:var(--primary-dark)}
+.btn-light{background:#fff;border:1.5px solid var(--border);color:var(--text)}
+.btn-light:hover{background:var(--background)}
+.btn-danger{background:#fdecea;color:var(--danger);border:1.5px solid #f5c6c0}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:8px 12px;font-size:13px;border-radius:10px}
+
+/* ---------- Summary ---------- */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.sum{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);transition:.25s}
+.sum:hover{transform:translateY(-3px)}
+.sum b{font-size:24px;display:block}
+.sum span{color:var(--muted);font-size:13px}
+
+/* ---------- Toolbar ---------- */
+.toolbar{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;box-shadow:var(--shadow);margin-bottom:22px}
+.toolbar .s{flex:1;min-width:200px;position:relative}
+.toolbar .s input{width:100%;padding:11px 14px 11px 38px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none}
+.toolbar .s::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px}
+.toolbar select{padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none;cursor:pointer;max-width:230px}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15)}
+
+/* ---------- Announcement cards ---------- */
+.list{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.ann{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:.25s;display:flex;flex-direction:column;border-left:6px solid var(--primary)}
+.ann:hover{transform:translateY(-4px);box-shadow:0 16px 30px rgba(36,32,29,.13)}
+.ann.t-General{border-left-color:var(--primary)}
+.ann.t-Course{border-left-color:var(--info)}
+.ann.t-Exam{border-left-color:var(--danger)}
+.ann.t-Assignment{border-left-color:var(--success)}
+.ann.t-Event{border-left-color:var(--violet)}
+.ann .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{display:inline-block;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.type-General{background:#fdeede;color:var(--primary-dark)}
+.type-Course{background:#e6f0fc;color:var(--info)}
+.type-Exam{background:#fdeaea;color:var(--danger)}
+.type-Assignment{background:#e6f6ec;color:var(--success)}
+.type-Event{background:#f0e8fa;color:var(--violet)}
+.pr-High{background:var(--danger);color:#fff}
+.pr-Medium{background:#fdf1d9;color:#a8741a}
+.pr-Low{background:#efeae3;color:var(--muted)}
+.pin{background:none;border:none;cursor:pointer;font-size:18px;opacity:.35;transition:.2s}
+.pin:hover{opacity:1}
+.pin.on{opacity:1}
+.ann h3{font-size:18px;line-height:1.35;margin-bottom:8px}
+.ann p{font-size:14px;color:#5d544c;line-height:1.55;margin-bottom:14px;flex:1;white-space:pre-line}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.meta b{color:var(--text)}
+.card-actions{display:flex;gap:8px}
+.pinned-flag{font-size:12px;color:var(--primary-dark);font-weight:700;margin-bottom:6px}
+
+.empty{text-align:center;color:var(--muted);padding:50px 20px;background:var(--card);border:1px dashed var(--border);border-radius:18px}
+.empty span{font-size:40px;display:block;margin-bottom:8px}
+
+/* ---------- Modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(36,32,29,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:150}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 26px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-head h3{font-size:19px}
+.close{background:#f3ece3;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px}
+.close:hover{background:var(--danger);color:#fff}
+.modal-body{padding:24px 26px}
+.modal-foot{padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none;transition:.2s}
+.field textarea{min-height:110px;resize:vertical;line-height:1.5}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15);background:#fff}
+.field input.invalid,.field select.invalid,.field textarea.invalid{border-color:var(--danger)}
+.field .err{color:var(--danger);font-size:12px;margin-top:4px;min-height:14px}
+.full{grid-column:1/-1}
+.count{font-size:12px;color:var(--muted);text-align:right;margin-top:3px}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:.3s;z-index:300}
+.toast.show{transform:none;opacity:1}
+.toast.ok{background:var(--success)}
+.toast.bad{background:var(--danger)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1100px){.summary{grid-template-columns:repeat(2,1fr)}.list{grid-template-columns:1fr}}
+@media (max-width:992px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .overlay.show{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+}
+@media (max-width:640px){
+  .form-grid,.meta{grid-template-columns:1fr}
+  .user div,.top-title{display:none}
+  .dropdown{width:280px;right:-60px}
+  .page-head .btn{width:100%}
+  .toolbar select{flex:1;max-width:none}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">🎓</div>
+    <div><h3>Faculty Management<br>Platform</h3></div>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="ic">🏠</span>Dashboard</a>
+    <a href="faculty-profile.html"><span class="ic">👤</span>My Profile</a>
+    <a href="courses.html"><span class="ic">📚</span>Courses</a>
+    <a href="students.html"><span class="ic">🧑‍🎓</span>Students</a>
+    <a href="attendance.html"><span class="ic">✅</span>Attendance</a>
+    <a href="assignments.html"><span class="ic">📝</span>Assignments</a>
+    <a href="schedule.html"><span class="ic">🗓️</span>Schedule</a>
+    <a href="announcements.html" class="active"><span class="ic">📢</span>Announcements</a>
+    <a href="reports.html"><span class="ic">📊</span>Reports</a>
+    <a href="#" class="logout" id="logoutBtn"><span class="ic">🚪</span>Logout</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="top-title">Announcement Management</div>
+    <div class="top-right">
+      <div class="bell">
+        <button class="bell-btn" id="bellBtn">🔔</button>
+        <span class="badge" id="badge">0</span>
+        <div class="dropdown" id="dropdown"><header>Notifications</header><div id="notifList"></div></div>
+      </div>
+      <div class="user">
+        <div class="avatar" id="topAvatar">DP</div>
+        <div><b id="topName">Dr. Priya</b><small id="topDept">CSE Department</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="page-head">
+      <div>
+        <h1>Announcements</h1>
+        <p>Share important updates with your students and colleagues.</p>
+      </div>
+      <button class="btn btn-primary" id="addBtn">＋ Create Announcement</button>
+    </div>
+
+    <section class="summary">
+      <div class="sum"><b id="sTotal">0</b><span>Total Announcements</span></div>
+      <div class="sum"><b id="sHigh">0</b><span>High Priority</span></div>
+      <div class="sum"><b id="sWeek">0</b><span>Posted Last 7 Days</span></div>
+      <div class="sum"><b id="sPinned">0</b><span>Pinned</span></div>
+    </section>
+
+    <section class="toolbar">
+      <div class="s"><input type="text" id="searchInput" placeholder="Search announcements"></div>
+      <select id="courseFilter"></select>
+      <select id="typeFilter">
+        <option value="all">All Types</option>
+        <option>General</option>
+        <option>Course</option>
+        <option>Exam</option>
+        <option>Assignment</option>
+        <option>Event</option>
+      </select>
+      <select id="priorityFilter">
+        <option value="all">All Priorities</option>
+        <option>High</option>
+        <option>Medium</option>
+        <option>Low</option>
+      </select>
+    </section>
+
+    <div id="area"></div>
+  </main>
+</div>
+
+<!-- Create / Edit modal -->
+<div class="modal" id="formModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="formTitle">Create Announcement</h3><button class="close" data-close="formModal">×</button></div>
+    <form id="annForm" novalidate>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field full"><label for="fTitle">Title</label><input type="text" id="fTitle" maxlength="90" placeholder="e.g. Internal Assessment I Schedule"><div class="err" id="e-fTitle"></div></div>
+          <div class="field full">
+            <label for="fDesc">Description</label>
+            <textarea id="fDesc" maxlength="400" placeholder="Write the full announcement here..."></textarea>
+            <div class="count" id="descCount">0 / 400</div>
+            <div class="err" id="e-fDesc"></div>
+          </div>
+          <div class="field"><label for="fType">Type</label>
+            <select id="fType"><option>General</option><option>Course</option><option>Exam</option><option>Assignment</option><option>Event</option></select>
+          </div>
+          <div class="field"><label for="fPriority">Priority</label>
+            <select id="fPriority"><option>High</option><option selected>Medium</option><option>Low</option></select>
+          </div>
+          <div class="field"><label for="fCourse">Course</label><select id="fCourse"></select></div>
+          <div class="field"><label for="fAudience">Audience</label><select id="fAudience"></select></div>
+          <div class="field full"><label for="fDate">Posted Date</label><input type="date" id="fDate"><div class="err" id="e-fDate"></div></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-light" data-close="formModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Post Announcement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Default data ---------- */
+  const defaultCourses = [
+    {id:1,name:"Web Technology",code:"CSE601",semester:"VI",className:"CSE A",category:"Core",students:42,attendance:90,progress:78,status:"Active"},
+    {id:2,name:"Database Management Systems",code:"CSE402",semester:"IV",className:"CSE B",category:"Core",students:40,attendance:86,progress:72,status:"Active"},
+    {id:3,name:"Object Oriented Programming",code:"CSE302",semester:"III",className:"CSE A",category:"Core",students:45,attendance:88,progress:85,status:"Active"},
+    {id:4,name:"Computer Networks",code:"CSE503",semester:"V",className:"CSE C",category:"Core",students:38,attendance:84,progress:65,status:"Active"},
+    {id:5,name:"Cloud Computing",code:"CSE704",semester:"VII",className:"CSE B",category:"Elective",students:41,attendance:87,progress:58,status:"Active"},
+    {id:6,name:"Software Engineering",code:"CSE505",semester:"V",className:"CSE A",category:"Core",students:42,attendance:87,progress:70,status:"Active"}
+  ];
+
+  function dateOffset(days) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  const defaultAnnouncements = [
+    {id:1,title:"Internal Assessment I Schedule Published",description:"Internal Assessment I will begin from 20 October 2026. Detailed timetable has been shared. Students must carry their ID cards.",type:"Exam",priority:"High",course:"All Courses",audience:"All Students",date:dateOffset(-1),pinned:true},
+    {id:2,title:"HTML & CSS Assignment Deadline Reminder",description:"The Responsive Website assignment is due on 10 October 2026. Late submissions will lose 2 marks per day.",type:"Assignment",priority:"Medium",course:"Web Technology",audience:"CSE A",date:dateOffset(-2),pinned:false},
+    {id:3,title:"Guest Lecture on Cloud Architecture",description:"An industry expert will speak on cloud architecture and DevOps on Friday at 02:00 PM in the Seminar Hall. Attendance is compulsory.",type:"Event",priority:"Medium",course:"Cloud Computing",audience:"CSE B",date:dateOffset(-4),pinned:false},
+    {id:4,title:"Extra Class for DBMS Normalization",description:"An extra doubt-clearing class on normalization will be held on Saturday at 11:00 AM in Room 204.",type:"Course",priority:"Low",course:"Database Management Systems",audience:"CSE B",date:dateOffset(-6),pinned:false},
+    {id:5,title:"Department Meeting on Friday",description:"All faculty members are requested to attend the department meeting at 03:00 PM in the Staff Room.",type:"General",priority:"High",course:"All Courses",audience:"Faculty",date:dateOffset(-9),pinned:false}
+  ];
+
+  function load(key, fallback) {
+    try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+  const courses = load("facultyCourses", defaultCourses);
+  let announcements = load("facultyAnnouncements", defaultAnnouncements);
+  const profile = load("facultyProfile", {fullName:"Dr. Priya Raman", department:"Computer Science and Engineering"});
+  function saveAnnouncements() { localStorage.setItem("facultyAnnouncements", JSON.stringify(announcements)); }
+
+  const $ = function (id) { return document.getElementById(id); };
+  let editingId = null;
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function showToast(msg, type) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + (type || "");
+    setTimeout(function () { t.classList.remove("show"); }, 2400);
+  }
+  function todayStr() { return dateOffset(0); }
+  function prettyDate(v) {
+    const d = new Date(v + "T00:00:00");
+    return isNaN(d) ? v : d.toLocaleDateString("en-IN", {day:"numeric", month:"long", year:"numeric"});
+  }
+  function daysAgo(v) {
+    return Math.round((new Date(todayStr() + "T00:00:00") - new Date(v + "T00:00:00")) / 86400000);
+  }
+
+  /* ---------- Top bar ---------- */
+  const facInitials = profile.fullName.split(" ").filter(function (p) { return p && p.indexOf(".") === -1; }).slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase();
+  $("topAvatar").textContent = facInitials || "FM";
+  $("topName").textContent = profile.fullName;
+  $("topDept").textContent = profile.department.replace("Computer Science and Engineering", "CSE Department");
+
+  let notifications = [];
+  try { notifications = JSON.parse(localStorage.getItem("facultyNotifications")) || []; } catch (e) {}
+  function renderNotifs() {
+    const unread = notifications.filter(function (n) { return !n.read; }).length;
+    $("badge").textContent = unread;
+    $("badge").style.display = unread ? "grid" : "none";
+    $("notifList").innerHTML = notifications.length ? notifications.map(function (n) {
+      return '<div class="notif ' + (n.read ? "" : "unread") + '">' + esc(n.text) + '<small>' + esc(n.time) + '</small></div>';
+    }).join("") : '<div class="notif">No notifications yet.</div>';
+  }
+  renderNotifs();
+  $("bellBtn").addEventListener("click", function (e) { e.stopPropagation(); $("dropdown").classList.toggle("show"); });
+  $("dropdown").addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { $("dropdown").classList.remove("show"); });
+
+  function addNotification(text) {
+    const nextId = notifications.reduce(function (m, n) { return Math.max(m, n.id || 0); }, 0) + 1;
+    notifications.unshift({id: nextId, text: text, time: "Just now", read: false});
+    notifications = notifications.slice(0, 12);
+    localStorage.setItem("facultyNotifications", JSON.stringify(notifications));
+    renderNotifs();
+  }
+
+  /* ---------- Dropdowns ---------- */
+  const courseNames = courses.map(function (c) { return c.name; });
+  const classNames = Array.from(new Set(courses.map(function (c) { return c.className; }).concat(["CSE A","CSE B","CSE C","IT A"]))).sort();
+
+  $("fCourse").innerHTML = '<option>All Courses</option>' + courseNames.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join("");
+  $("fAudience").innerHTML = '<option>All Students</option>' + classNames.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join("") + '<option>Faculty</option>';
+
+  function fillCourseFilter() {
+    const used = announcements.map(function (a) { return a.course; });
+    const names = Array.from(new Set(["All Courses"].concat(courseNames, used)));
+    const current = $("courseFilter").value || "all";
+    $("courseFilter").innerHTML = '<option value="all">All Courses (filter)</option>' + names.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join("");
+    $("courseFilter").value = current === "all" || names.indexOf(current) !== -1 ? current : "all";
+  }
+
+  /* ---------- Render ---------- */
+  function filtered() {
+    const q = $("searchInput").value.trim().toLowerCase();
+    const course = $("courseFilter").value;
+    const type = $("typeFilter").value;
+    const pr = $("priorityFilter").value;
+    return announcements.filter(function (a) {
+      const matchQ = !q || a.title.toLowerCase().includes(q) || a.description.toLowerCase().includes(q);
+      return matchQ && (course === "all" || a.course === course) && (type === "all" || a.type === type) && (pr === "all" || a.priority === pr);
+    }).sort(function (a, b) {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return b.id - a.id;
+    });
+  }
+
+  function render() {
+    fillCourseFilter();
+    $("sTotal").textContent = announcements.length;
+    $("sHigh").textContent = announcements.filter(function (a) { return a.priority === "High"; }).length;
+    $("sWeek").textContent = announcements.filter(function (a) { const d = daysAgo(a.date); return d >= 0 && d <= 7; }).length;
+    $("sPinned").textContent = announcements.filter(function (a) { return a.pinned; }).length;
+
+    const list = filtered();
+    if (!list.length) {
+      $("area").innerHTML = '<div class="empty"><span>📢</span>No announcements found. Try changing your search or filters, or create a new one.</div>';
+      return;
+    }
+    $("area").innerHTML = '<div class="list">' + list.map(function (a) {
+      return '<article class="ann t-' + a.type + '">' +
+        (a.pinned ? '<div class="pinned-flag">📌 Pinned</div>' : '') +
+        '<div class="top"><div class="tags"><span class="tag type-' + a.type + '">' + a.type + '</span><span class="tag pr-' + a.priority + '">' + a.priority + ' Priority</span></div>' +
+        '<button class="pin ' + (a.pinned ? "on" : "") + '" data-act="pin" data-id="' + a.id + '" title="' + (a.pinned ? "Unpin" : "Pin") + '">📌</button></div>' +
+        '<h3>' + esc(a.title) + '</h3>' +
+        '<p>' + esc(a.description) + '</p>' +
+        '<div class="meta"><span>📚 Course: <b>' + esc(a.course) + '</b></span><span>👥 Audience: <b>' + esc(a.audience) + '</b></span><span>📅 Posted: <b>' + prettyDate(a.date) + '</b></span></div>' +
+        '<div class="card-actions">' +
+          '<button class="btn btn-dark btn-sm" data-act="edit" data-id="' + a.id + '">Edit</button>' +
+          '<button class="btn btn-danger btn-sm" data-act="delete" data-id="' + a.id + '">Delete</button>' +
+        '</div></article>';
+    }).join("") + '</div>';
+  }
+
+  $("searchInput").addEventListener("input", render);
+  ["courseFilter","typeFilter","priorityFilter"].forEach(function (id) { $(id).addEventListener("change", render); });
+
+  /* ---------- Modal ---------- */
+  function openModal(id) { $(id).classList.add("show"); }
+  function closeModal(id) { $(id).classList.remove("show"); }
+  document.querySelectorAll("[data-close]").forEach(function (b) {
+    b.addEventListener("click", function () { closeModal(b.dataset.close); });
+  });
+  document.querySelectorAll(".modal").forEach(function (m) {
+    m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("show"); });
+  });
+
+  const errFields = ["fTitle","fDesc","fDate"];
+  function setErr(id, msg) { $("e-" + id).textContent = msg; $(id).classList.toggle("invalid", !!msg); return !msg; }
+  $("fDesc").addEventListener("input", function () { $("descCount").textContent = this.value.length + " / 400"; });
+
+  function ensureOption(selectId, value) {
+    const sel = $(selectId);
+    if (!Array.from(sel.options).some(function (o) { return o.value === value || o.text === value; })) {
+      sel.insertAdjacentHTML("beforeend", '<option>' + esc(value) + '</option>');
+    }
+  }
+
+  function openForm(a) {
+    errFields.forEach(function (f) { setErr(f, ""); });
+    editingId = a ? a.id : null;
+    $("formTitle").textContent = a ? "Edit Announcement" : "Create Announcement";
+    $("saveBtn").textContent = a ? "Update Announcement" : "Post Announcement";
+    if (a) { ensureOption("fCourse", a.course); ensureOption("fAudience", a.audience); }
+    $("fTitle").value = a ? a.title : "";
+    $("fDesc").value = a ? a.description : "";
+    $("descCount").textContent = $("fDesc").value.length + " / 400";
+    $("fType").value = a ? a.type : "General";
+    $("fPriority").value = a ? a.priority : "Medium";
+    $("fCourse").value = a ? a.course : "All Courses";
+    $("fAudience").value = a ? a.audience : "All Students";
+    $("fDate").value = a ? a.date : todayStr();
+    openModal("formModal");
+  }
+  $("addBtn").addEventListener("click", function () { openForm(null); });
+
+  $("annForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const title = $("fTitle").value.trim();
+    const desc = $("fDesc").value.trim();
+    const date = $("fDate").value;
+
+    let ok = true;
+    ok = setErr("fTitle", title.length < 5 ? "Enter a title (min 5 characters)." : "") && ok;
+    ok = setErr("fDesc", desc.length < 10 ? "Description must be at least 10 characters." : "") && ok;
+    ok = setErr("fDate", !date ? "Please select the posted date." : "") && ok;
+    if (!ok) return;
+
+    const data = {
+      title: title, description: desc, type: $("fType").value, priority: $("fPriority").value,
+      course: $("fCourse").value, audience: $("fAudience").value, date: date
+    };
+
+    if (editingId) {
+      announcements = announcements.map(function (a) { return a.id === editingId ? Object.assign({}, a, data) : a; });
+      showToast("Announcement updated.", "ok");
+    } else {
+      const newId = announcements.reduce(function (m, a) { return Math.max(m, a.id); }, 0) + 1;
+      announcements.push(Object.assign({id: newId, pinned: false}, data));
+      addNotification("Announcement posted: " + title);
+      showToast("Announcement posted successfully.", "ok");
+    }
+    saveAnnouncements();
+    closeModal("formModal");
+    render();
+  });
+
+  /* ---------- Card buttons ---------- */
+  $("area").addEventListener("click", function (e) {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    const a = announcements.find(function (x) { return x.id === id; });
+    if (btn.dataset.act === "edit") openForm(a);
+    if (btn.dataset.act === "pin") {
+      a.pinned = !a.pinned;
+      saveAnnouncements();
+      render();
+      showToast(a.pinned ? "Announcement pinned to top." : "Announcement unpinned.", "ok");
+    }
+    if (btn.dataset.act === "delete") {
+      if (confirm('Delete "' + a.title + '"? This cannot be undone.')) {
+        announcements = announcements.filter(function (x) { return x.id !== id; });
+        saveAnnouncements();
+        render();
+        showToast("Announcement deleted.", "bad");
+      }
+    }
+  });
+
+  render();
+
+  // Opened from the dashboard "Create Announcement" quick action
+  if (new URLSearchParams(window.location.search).get("create") === "1") openForm(null);
+
+  /* ---------- Mobile sidebar ---------- */
+  function toggleMenu(open) { $("sidebar").classList.toggle("open", open); $("overlay").classList.toggle("show", open); }
+  $("menuBtn").addEventListener("click", function () { toggleMenu(true); });
+  $("overlay").addEventListener("click", function () { toggleMenu(false); });
+
+  /* ---------- Logout ---------- */
+  $("logoutBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("facultyLoggedIn");
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>

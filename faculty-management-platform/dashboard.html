@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | Faculty Management Platform</title>
+<script>
+  if (localStorage.getItem("facultyLoggedIn") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
+<style>
+:root{
+  --primary:#d98449;--primary-dark:#b9662f;--gold:#e8b35c;
+  --dark:#24201d;--dark-2:#332c27;--background:#f7f3ee;
+  --card:#ffffff;--text:#29251f;--muted:#7a7068;--border:#e8dfd4;
+  --danger:#c0392b;--success:#2e8b57;--info:#3a7bd5;
+  --shadow:0 6px 20px rgba(36,32,29,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--background);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--dark);color:#e9e0d6;
+  display:flex;flex-direction:column;padding:22px 16px;z-index:100;transition:transform .3s;
+}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.sb-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--gold));display:grid;place-items:center;font-size:22px}
+.sb-brand h3{font-size:15px;line-height:1.2}
+.sb-brand small{color:#a89c90;font-size:11px}
+.nav{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;color:#cfc4b8;transition:.2s}
+.nav a span.ic{width:22px;text-align:center;font-size:16px}
+.nav a:hover{background:var(--dark-2);color:#fff;transform:translateX(3px)}
+.nav a.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 6px 14px rgba(217,132,73,.35)}
+.nav .logout{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;border-radius:0;color:#f0a79d}
+.nav .logout:hover{background:transparent;color:#ff8f80}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ---------- Main ---------- */
+.main{margin-left:250px;min-height:100vh}
+.topbar{
+  position:sticky;top:0;z-index:80;background:rgba(247,243,238,.92);backdrop-filter:blur(8px);
+  display:flex;align-items:center;gap:16px;padding:14px 30px;border-bottom:1px solid var(--border);
+}
+.menu-btn{display:none;background:var(--dark);color:#fff;border:none;width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer}
+.search{flex:1;max-width:420px;position:relative}
+.search input{width:100%;padding:11px 14px 11px 40px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-size:14px;outline:none;transition:.2s}
+.search input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15)}
+.search::before{content:"🔍";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.bell{position:relative}
+.bell-btn{background:#fff;border:1.5px solid var(--border);width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;transition:.2s}
+.bell-btn:hover{border-color:var(--primary)}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.dropdown{
+  display:none;position:absolute;right:0;top:52px;width:320px;background:#fff;border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 16px 40px rgba(36,32,29,.18);overflow:hidden;
+}
+.dropdown.show{display:block}
+.dropdown header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.dropdown header button{background:none;border:none;color:var(--primary-dark);font-size:12px;cursor:pointer;font-weight:600}
+.notif{padding:12px 16px;border-bottom:1px solid #f3ece3;font-size:13px;line-height:1.4}
+.notif.unread{background:#fdf6ee}
+.notif small{color:var(--muted);display:block;margin-top:3px}
+.user{display:flex;align-items:center;gap:11px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.user b{display:block;font-size:14px}
+.user small{color:var(--muted);font-size:12px}
+
+.content{padding:28px 30px 40px}
+
+/* ---------- Hero ---------- */
+.hero{
+  background:linear-gradient(120deg,#24201d 0%,#4a3a2e 60%,#b9662f 150%);color:#fff;
+  border-radius:22px;padding:30px 34px;display:flex;justify-content:space-between;align-items:center;gap:20px;
+  position:relative;overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow);
+}
+.hero::after{content:"";position:absolute;width:300px;height:300px;right:-80px;top:-100px;border-radius:50%;background:radial-gradient(circle,rgba(232,179,92,.4),transparent 70%)}
+.hero h1{font-size:28px;margin-bottom:8px;position:relative;z-index:1}
+.hero p{color:#e3d9cd;position:relative;z-index:1;max-width:520px;line-height:1.5}
+.hero .date{position:relative;z-index:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:12px 18px;border-radius:14px;text-align:center;white-space:nowrap}
+.hero .date b{display:block;font-size:22px;color:var(--gold)}
+
+/* ---------- Stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:24px}
+.stat{background:var(--card);border-radius:18px;padding:20px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:16px;transition:.25s}
+.stat:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(36,32,29,.12)}
+.stat .ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px}
+.stat:nth-child(1) .ic{background:#fdeede}
+.stat:nth-child(2) .ic{background:#e6f0fc}
+.stat:nth-child(3) .ic{background:#e6f6ec}
+.stat:nth-child(4) .ic{background:#fdeaea}
+.stat b{font-size:28px;display:block;line-height:1.1}
+.stat span{color:var(--muted);font-size:13px}
+
+/* ---------- Layout ---------- */
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;margin-bottom:24px}
+.card{background:var(--card);border-radius:20px;padding:24px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.card-head h2{font-size:18px}
+.card-head a{color:var(--primary-dark);font-size:13px;font-weight:600}
+
+/* Schedule */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.slot{position:relative;padding:12px 14px;border-radius:12px;background:#fcfaf7;border:1px solid var(--border);margin-bottom:12px;transition:.2s}
+.slot:hover{border-color:var(--primary);transform:translateX(4px)}
+.slot::before{content:"";position:absolute;left:-22px;top:20px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:3px solid #fff;box-shadow:0 0 0 2px var(--primary)}
+.slot b{font-size:13px;color:var(--primary-dark)}
+.slot div{font-size:15px;font-weight:600;margin-top:2px}
+.slot small{color:var(--muted)}
+
+/* Quick actions */
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qa{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px;border:1.5px solid var(--border);
+  border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);transition:.25s;text-align:left
+}
+.qa span{font-size:22px}
+.qa:hover{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-color:transparent;transform:translateY(-3px);box-shadow:0 10px 20px rgba(217,132,73,.35)}
+
+/* Courses */
+.courses{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.course{border:1px solid var(--border);border-radius:16px;padding:18px;background:#fff;transition:.25s;position:relative;overflow:hidden}
+.course::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--primary),var(--gold))}
+.course:hover{transform:translateY(-5px);box-shadow:0 14px 28px rgba(36,32,29,.12)}
+.course h4{font-size:16px;margin-bottom:3px}
+.course .code{font-size:12px;color:var(--muted);margin-bottom:12px}
+.meta{display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px;color:var(--muted)}
+.meta b{color:var(--text)}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.bar{height:8px;background:#f0e8de;border-radius:6px;overflow:hidden;margin-bottom:12px}
+.bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--primary),var(--gold));transition:width .8s}
+.bar.green i{background:linear-gradient(90deg,#2e8b57,#6cc08b)}
+.view-btn{width:100%;padding:10px;border:none;border-radius:10px;background:var(--dark);color:#fff;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+.view-btn:hover{background:var(--primary-dark)}
+.empty{text-align:center;color:var(--muted);padding:24px;grid-column:1/-1}
+
+/* Activities */
+.activity{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #f3ece3}
+.activity:last-child{border:none}
+.activity .dot{width:40px;height:40px;border-radius:12px;background:#fdeede;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.activity p{font-size:14px;font-weight:600}
+.activity small{color:var(--muted);font-size:12px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:.3s;z-index:200}
+.toast.show{transform:none;opacity:1}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1200px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .courses{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:992px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .overlay.show{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .grid{grid-template-columns:1fr}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+}
+@media (max-width:640px){
+  .hero{flex-direction:column;align-items:flex-start;padding:24px}
+  .hero h1{font-size:22px}
+  .stats{grid-template-columns:1fr 1fr;gap:12px}
+  .stat{flex-direction:column;align-items:flex-start;padding:16px}
+  .courses{grid-template-columns:1fr}
+  .user div{display:none}
+  .dropdown{width:280px;right:-60px}
+  .search{max-width:none}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">🎓</div>
+    <div><h3>Faculty Management<br>Platform</h3></div>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html" class="active"><span class="ic">🏠</span>Dashboard</a>
+    <a href="faculty-profile.html"><span class="ic">👤</span>My Profile</a>
+    <a href="courses.html"><span class="ic">📚</span>Courses</a>
+    <a href="students.html"><span class="ic">🧑‍🎓</span>Students</a>
+    <a href="attendance.html"><span class="ic">✅</span>Attendance</a>
+    <a href="assignments.html"><span class="ic">📝</span>Assignments</a>
+    <a href="schedule.html"><span class="ic">🗓️</span>Schedule</a>
+    <a href="announcements.html"><span class="ic">📢</span>Announcements</a>
+    <a href="reports.html"><span class="ic">📊</span>Reports</a>
+    <a href="#" class="logout" id="logoutBtn"><span class="ic">🚪</span>Logout</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="search"><input type="text" id="searchInput" placeholder="Search courses..."></div>
+    <div class="top-right">
+      <div class="bell">
+        <button class="bell-btn" id="bellBtn">🔔</button>
+        <span class="badge" id="badge">0</span>
+        <div class="dropdown" id="dropdown">
+          <header>Notifications <button id="markRead">Mark all read</button></header>
+          <div id="notifList"></div>
+        </div>
+      </div>
+      <div class="user">
+        <div class="avatar" id="avatar">DP</div>
+        <div><b id="userName">Dr. Priya</b><small id="userDept">CSE Department</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- Hero -->
+    <section class="hero">
+      <div>
+        <h1 id="greeting">Good Morning, Dr. Priya 👋</h1>
+        <p>You have 4 sessions scheduled today and 12 assignments awaiting review. Have a productive day!</p>
+      </div>
+      <div class="date"><b id="dayNum">--</b><span id="dayText">--</span></div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="stat"><div class="ic">📚</div><div><b id="statCourses">06</b><span>Total Courses</span></div></div>
+      <div class="stat"><div class="ic">🧑‍🎓</div><div><b id="statStudents">248</b><span>Total Students</span></div></div>
+      <div class="stat"><div class="ic">✅</div><div><b id="statAttendance">87%</b><span>Average Attendance</span></div></div>
+      <div class="stat"><div class="ic">📝</div><div><b id="statPending">12</b><span>Pending Assignments</span></div></div>
+    </section>
+
+    <!-- Schedule + Quick actions -->
+    <section class="grid">
+      <div class="card">
+        <div class="card-head"><h2>Today's Schedule</h2><a href="schedule.html">Full timetable →</a></div>
+        <div class="timeline">
+          <div class="slot"><b>09:00 AM</b><div>Web Technology</div><small>CSE A • Room 301</small></div>
+          <div class="slot"><b>11:00 AM</b><div>Database Management</div><small>CSE B • Room 204</small></div>
+          <div class="slot"><b>02:00 PM</b><div>Programming Lab</div><small>CSE A • Lab 2</small></div>
+          <div class="slot"><b>04:00 PM</b><div>Project Review</div><small>Final Year • Seminar Hall</small></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Quick Actions</h2></div>
+        <div class="actions">
+          <button class="qa" data-go="attendance.html"><span>✅</span>Mark Attendance</button>
+          <button class="qa" data-go="assignments.html?add=1"><span>📝</span>Add Assignment</button>
+          <button class="qa" data-go="students.html"><span>🧑‍🎓</span>View Students</button>
+          <button class="qa" data-go="announcements.html?create=1"><span>📢</span>Create Announcement</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Course overview -->
+    <section class="card" style="margin-bottom:24px">
+      <div class="card-head"><h2>Course Overview</h2><a href="courses.html">Manage courses →</a></div>
+      <div class="courses" id="courseGrid"></div>
+    </section>
+
+    <!-- Recent activities -->
+    <section class="card">
+      <div class="card-head"><h2>Recent Activities</h2></div>
+      <div id="activityList"></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Default data (created once, shared by all pages) ---------- */
+  const defaultProfile = {
+    fullName:"Dr. Priya Raman", facultyId:"FAC-CSE-1024", email:"priya@faculty.edu",
+    phone:"+91 98765 43210", department:"Computer Science and Engineering",
+    designation:"Associate Professor", qualification:"Ph.D. in Computer Science",
+    experience:"12 Years", joiningDate:"2014-06-15",
+    bio:"Associate Professor with a passion for teaching web technologies, databases and cloud computing.",
+    skills:["HTML","CSS","JavaScript","Python","Java","SQL","Cloud Computing"]
+  };
+
+  const defaultCourses = [
+    {id:1,name:"Web Technology",code:"CSE601",semester:"VI",className:"CSE A",category:"Core",students:42,attendance:90,progress:78,status:"Active"},
+    {id:2,name:"Database Management Systems",code:"CSE402",semester:"IV",className:"CSE B",category:"Core",students:40,attendance:86,progress:72,status:"Active"},
+    {id:3,name:"Object Oriented Programming",code:"CSE302",semester:"III",className:"CSE A",category:"Core",students:45,attendance:88,progress:85,status:"Active"},
+    {id:4,name:"Computer Networks",code:"CSE503",semester:"V",className:"CSE C",category:"Core",students:38,attendance:84,progress:65,status:"Active"},
+    {id:5,name:"Cloud Computing",code:"CSE704",semester:"VII",className:"CSE B",category:"Elective",students:41,attendance:87,progress:58,status:"Active"},
+    {id:6,name:"Software Engineering",code:"CSE505",semester:"V",className:"CSE A",category:"Core",students:42,attendance:87,progress:70,status:"Active"}
+  ];
+
+  function load(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+
+  const profile = load("facultyProfile", defaultProfile);
+  const courses = load("facultyCourses", defaultCourses);
+  let notifications = load("facultyNotifications", [
+    {id:1,text:"New assignment submissions received for Web Technology.",time:"10 min ago",read:false},
+    {id:2,text:"Attendance report for CSE B is ready.",time:"1 hour ago",read:false},
+    {id:3,text:"Department meeting tomorrow at 03:30 PM.",time:"3 hours ago",read:false},
+    {id:4,text:"2 new students enrolled in Cloud Computing.",time:"Yesterday",read:true}
+  ]);
+
+  /* ---------- Helpers ---------- */
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  /* ---------- Profile data in header + greeting ---------- */
+  const nameParts = profile.fullName.split(" ");
+  const shortName = nameParts.slice(0, 2).join(" ");
+  const initials = nameParts.filter(function (p) { return p.indexOf(".") === -1; })
+    .slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase();
+  document.getElementById("userName").textContent = profile.fullName;
+  document.getElementById("userDept").textContent = profile.department.replace("Computer Science and Engineering", "CSE Department");
+  document.getElementById("avatar").textContent = initials || "FM";
+
+  const now = new Date();
+  const hour = now.getHours();
+  const greet = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+  document.getElementById("greeting").textContent = greet + ", " + shortName + " 👋";
+  document.getElementById("dayNum").textContent = pad(now.getDate());
+  document.getElementById("dayText").textContent = now.toLocaleDateString("en-IN", {weekday:"long", month:"long", year:"numeric"});
+
+  /* ---------- Statistics (calculated from stored data) ---------- */
+  const totalStudents = courses.reduce(function (s, c) { return s + Number(c.students); }, 0);
+  const avgAttendance = courses.length
+    ? Math.round(courses.reduce(function (s, c) { return s + Number(c.attendance); }, 0) / courses.length) : 0;
+  let pending = 12;
+  try {
+    const assignments = JSON.parse(localStorage.getItem("facultyAssignments"));
+    if (Array.isArray(assignments)) {
+      pending = assignments.reduce(function (s, a) { return s + Number(a.pending || 0); }, 0);
+    }
+  } catch (e) {}
+
+  function countUp(id, target, suffix, padTwo) {
+    const el = document.getElementById(id);
+    let current = 0;
+    const step = Math.max(1, Math.ceil(target / 30));
+    const timer = setInterval(function () {
+      current += step;
+      if (current >= target) { current = target; clearInterval(timer); }
+      el.textContent = (padTwo ? pad(current) : current) + suffix;
+    }, 25);
+  }
+  countUp("statCourses", courses.length, "", true);
+  countUp("statStudents", totalStudents, "", false);
+  countUp("statAttendance", avgAttendance, "%", false);
+  countUp("statPending", pending, "", false);
+
+  /* ---------- Course cards + search ---------- */
+  const courseGrid = document.getElementById("courseGrid");
+  function renderCourses(list) {
+    if (!list.length) {
+      courseGrid.innerHTML = '<div class="empty">No courses match your search.</div>';
+      return;
+    }
+    courseGrid.innerHTML = list.map(function (c) {
+      return '<div class="course">' +
+        '<h4>' + c.name + '</h4>' +
+        '<div class="code">' + c.code + ' • ' + c.className + '</div>' +
+        '<div class="meta"><span>Students: <b>' + c.students + '</b></span><span>Sem: <b>' + c.semester + '</b></span></div>' +
+        '<div class="bar-label"><span>Progress</span><b>' + c.progress + '%</b></div>' +
+        '<div class="bar"><i style="width:' + c.progress + '%"></i></div>' +
+        '<div class="bar-label"><span>Attendance</span><b>' + c.attendance + '%</b></div>' +
+        '<div class="bar green"><i style="width:' + c.attendance + '%"></i></div>' +
+        '<button class="view-btn" data-id="' + c.id + '">View Course</button>' +
+      '</div>';
+    }).join("");
+  }
+  renderCourses(courses);
+
+  courseGrid.addEventListener("click", function (e) {
+    const btn = e.target.closest(".view-btn");
+    if (btn) window.location.href = "courses.html?view=" + btn.dataset.id;
+  });
+
+  document.getElementById("searchInput").addEventListener("input", function () {
+    const q = this.value.trim().toLowerCase();
+    renderCourses(courses.filter(function (c) {
+      return c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.className.toLowerCase().includes(q);
+    }));
+  });
+
+  /* ---------- Recent activities ---------- */
+  const activities = [
+    {icon:"📝", title:"Assignment submitted", info:"Karthik submitted 'HTML & CSS Responsive Website'", time:"15 minutes ago"},
+    {icon:"✅", title:"Attendance updated", info:"CSE A – Web Technology marked for today", time:"1 hour ago"},
+    {icon:"🧑‍🎓", title:"New student enrolled", info:"Divya joined Cloud Computing (CSE B)", time:"3 hours ago"},
+    {icon:"📢", title:"Announcement posted", info:"Internal Assessment I schedule published", time:"Yesterday"},
+    {icon:"📊", title:"Report generated", info:"Monthly attendance report for CSE A", time:"Yesterday"}
+  ];
+  document.getElementById("activityList").innerHTML = activities.map(function (a) {
+    return '<div class="activity"><div class="dot">' + a.icon + '</div>' +
+      '<div><p>' + a.title + '</p><small>' + a.info + ' • ' + a.time + '</small></div></div>';
+  }).join("");
+
+  /* ---------- Quick actions ---------- */
+  document.querySelectorAll(".qa").forEach(function (btn) {
+    btn.addEventListener("click", function () { window.location.href = btn.dataset.go; });
+  });
+
+  /* ---------- Notifications ---------- */
+  const badge = document.getElementById("badge");
+  const dropdown = document.getElementById("dropdown");
+  function renderNotifs() {
+    const unread = notifications.filter(function (n) { return !n.read; }).length;
+    badge.textContent = unread;
+    badge.style.display = unread ? "grid" : "none";
+    document.getElementById("notifList").innerHTML = notifications.map(function (n) {
+      return '<div class="notif ' + (n.read ? "" : "unread") + '">' + n.text + '<small>' + n.time + '</small></div>';
+    }).join("");
+  }
+  renderNotifs();
+  document.getElementById("bellBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    dropdown.classList.toggle("show");
+  });
+  dropdown.addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { dropdown.classList.remove("show"); });
+  document.getElementById("markRead").addEventListener("click", function () {
+    notifications.forEach(function (n) { n.read = true; });
+    localStorage.setItem("facultyNotifications", JSON.stringify(notifications));
+    renderNotifs();
+    showToast("All notifications marked as read");
+  });
+
+  /* ---------- Mobile sidebar ---------- */
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  function toggleMenu(open) {
+    sidebar.classList.toggle("open", open);
+    overlay.classList.toggle("show", open);
+  }
+  document.getElementById("menuBtn").addEventListener("click", function () { toggleMenu(true); });
+  overlay.addEventListener("click", function () { toggleMenu(false); });
+
+  /* ---------- Logout ---------- */
+  document.getElementById("logoutBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("facultyLoggedIn");
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>

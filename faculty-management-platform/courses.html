@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Courses | Faculty Management Platform</title>
+<script>
+  if (localStorage.getItem("facultyLoggedIn") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
+<style>
+:root{
+  --primary:#d98449;--primary-dark:#b9662f;--gold:#e8b35c;
+  --dark:#24201d;--dark-2:#332c27;--background:#f7f3ee;
+  --card:#ffffff;--text:#29251f;--muted:#7a7068;--border:#e8dfd4;
+  --danger:#c0392b;--success:#2e8b57;--info:#3a7bd5;
+  --shadow:0 6px 20px rgba(36,32,29,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--background);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button,input,select,textarea{font-family:inherit}
+
+/* ---------- Sidebar ---------- */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--dark);color:#e9e0d6;display:flex;flex-direction:column;padding:22px 16px;z-index:100;transition:transform .3s}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.sb-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--gold));display:grid;place-items:center;font-size:22px}
+.sb-brand h3{font-size:15px;line-height:1.2}
+.nav{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;color:#cfc4b8;transition:.2s}
+.nav a span.ic{width:22px;text-align:center;font-size:16px}
+.nav a:hover{background:var(--dark-2);color:#fff;transform:translateX(3px)}
+.nav a.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 6px 14px rgba(217,132,73,.35)}
+.nav .logout{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;border-radius:0;color:#f0a79d}
+.nav .logout:hover{background:transparent;color:#ff8f80}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ---------- Main + topbar ---------- */
+.main{margin-left:250px;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:80;background:rgba(247,243,238,.92);backdrop-filter:blur(8px);display:flex;align-items:center;gap:16px;padding:14px 30px;border-bottom:1px solid var(--border)}
+.menu-btn{display:none;background:var(--dark);color:#fff;border:none;width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer}
+.top-title{font-weight:600;font-size:15px;color:var(--muted)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.bell{position:relative}
+.bell-btn{background:#fff;border:1.5px solid var(--border);width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;transition:.2s}
+.bell-btn:hover{border-color:var(--primary)}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.dropdown{display:none;position:absolute;right:0;top:52px;width:320px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(36,32,29,.18);overflow:hidden}
+.dropdown.show{display:block}
+.dropdown header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.notif{padding:12px 16px;border-bottom:1px solid #f3ece3;font-size:13px;line-height:1.4}
+.notif.unread{background:#fdf6ee}
+.notif small{color:var(--muted);display:block;margin-top:3px}
+.user{display:flex;align-items:center;gap:11px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.user b{display:block;font-size:14px}
+.user small{color:var(--muted);font-size:12px}
+
+.content{padding:28px 30px 40px}
+.page-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-head h1{font-size:26px}
+.page-head p{color:var(--muted);font-size:14px;margin-top:4px}
+
+.btn{padding:11px 20px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:.25s}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 8px 18px rgba(217,132,73,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 22px rgba(217,132,73,.4)}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-dark:hover{background:var(--primary-dark)}
+.btn-light{background:#fff;border:1.5px solid var(--border);color:var(--text)}
+.btn-light:hover{background:var(--background)}
+.btn-danger{background:#fdecea;color:var(--danger);border:1.5px solid #f5c6c0}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:10px}
+
+/* ---------- Summary + toolbar ---------- */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.sum{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);transition:.25s}
+.sum:hover{transform:translateY(-3px)}
+.sum b{font-size:24px;display:block}
+.sum span{color:var(--muted);font-size:13px}
+
+.toolbar{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;box-shadow:var(--shadow);margin-bottom:22px}
+.toolbar .s{flex:1;min-width:200px;position:relative}
+.toolbar .s input{width:100%;padding:11px 14px 11px 38px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none}
+.toolbar .s::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px}
+.toolbar select{padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none;cursor:pointer}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15)}
+.view-toggle{display:flex;border:1.5px solid var(--border);border-radius:12px;overflow:hidden}
+.view-toggle button{padding:10px 14px;border:none;background:#fff;cursor:pointer;font-size:14px}
+.view-toggle button.on{background:var(--dark);color:#fff}
+
+/* ---------- Cards ---------- */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.course{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:.25s}
+.course::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--primary),var(--gold))}
+.course:hover{transform:translateY(-5px);box-shadow:0 16px 30px rgba(36,32,29,.13)}
+.course .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.course h3{font-size:17px;line-height:1.3}
+.code{font-size:12px;color:var(--muted);margin-bottom:12px}
+.tag{display:inline-block;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.tag.Active{background:#e6f6ec;color:var(--success)}
+.tag.Completed{background:#e6f0fc;color:var(--info)}
+.tag.Upcoming{background:#fdf1d9;color:#a8741a}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.meta b{color:var(--text)}
+.bl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.bar{height:8px;background:#f0e8de;border-radius:6px;overflow:hidden;margin-bottom:12px}
+.bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--primary),var(--gold))}
+.bar.green i{background:linear-gradient(90deg,#2e8b57,#6cc08b)}
+.card-actions{display:flex;gap:8px;margin-top:6px}
+.card-actions .btn{flex:1}
+
+/* ---------- Table ---------- */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{background:#faf5ee;text-align:left;padding:14px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:14px 16px;border-bottom:1px solid #f3ece3;font-size:14px}
+tr:hover td{background:#fdfaf6}
+td .mini{width:90px;height:7px;background:#f0e8de;border-radius:5px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+td .mini i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),var(--gold))}
+.row-actions{display:flex;gap:6px}
+
+.empty{text-align:center;color:var(--muted);padding:50px 20px;background:var(--card);border:1px dashed var(--border);border-radius:18px}
+.empty span{font-size:40px;display:block;margin-bottom:8px}
+
+/* ---------- Modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(36,32,29,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:150}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:20px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 26px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-head h3{font-size:19px}
+.close{background:#f3ece3;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px}
+.close:hover{background:var(--danger);color:#fff}
+.modal-body{padding:24px 26px}
+.modal-foot{padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field input,.field select{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none;transition:.2s}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15);background:#fff}
+.field input.invalid,.field select.invalid{border-color:var(--danger)}
+.field .err{color:var(--danger);font-size:12px;margin-top:4px;min-height:14px}
+.full{grid-column:1/-1}
+.detail-hero{background:linear-gradient(120deg,#24201d,#4a3a2e 70%,#b9662f 160%);color:#fff;border-radius:16px;padding:20px;margin-bottom:18px}
+.detail-hero h2{font-size:21px;margin-bottom:4px}
+.detail-hero small{color:#e3d9cd}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.detail-grid div{background:#fcfaf7;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.detail-grid small{display:block;color:var(--muted);font-size:12px;margin-bottom:2px}
+.detail-grid b{font-size:15px}
+.slider-box{background:#fdf6ee;border:1px dashed var(--primary);border-radius:14px;padding:16px}
+.slider-box input[type=range]{width:100%;accent-color:var(--primary);margin-top:8px}
+.slider-top{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:.3s;z-index:300}
+.toast.show{transform:none;opacity:1}
+.toast.ok{background:var(--success)}
+.toast.bad{background:var(--danger)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1200px){.grid{grid-template-columns:repeat(2,1fr)}.summary{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:992px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .overlay.show{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+}
+@media (max-width:640px){
+  .grid{grid-template-columns:1fr}
+  .form-grid,.detail-grid{grid-template-columns:1fr}
+  .user div,.top-title{display:none}
+  .dropdown{width:280px;right:-60px}
+  .page-head .btn{width:100%}
+  .toolbar select,.view-toggle{flex:1}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">🎓</div>
+    <div><h3>Faculty Management<br>Platform</h3></div>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="ic">🏠</span>Dashboard</a>
+    <a href="faculty-profile.html"><span class="ic">👤</span>My Profile</a>
+    <a href="courses.html" class="active"><span class="ic">📚</span>Courses</a>
+    <a href="students.html"><span class="ic">🧑‍🎓</span>Students</a>
+    <a href="attendance.html"><span class="ic">✅</span>Attendance</a>
+    <a href="assignments.html"><span class="ic">📝</span>Assignments</a>
+    <a href="schedule.html"><span class="ic">🗓️</span>Schedule</a>
+    <a href="announcements.html"><span class="ic">📢</span>Announcements</a>
+    <a href="reports.html"><span class="ic">📊</span>Reports</a>
+    <a href="#" class="logout" id="logoutBtn"><span class="ic">🚪</span>Logout</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="top-title">Course Management</div>
+    <div class="top-right">
+      <div class="bell">
+        <button class="bell-btn" id="bellBtn">🔔</button>
+        <span class="badge" id="badge">0</span>
+        <div class="dropdown" id="dropdown"><header>Notifications</header><div id="notifList"></div></div>
+      </div>
+      <div class="user">
+        <div class="avatar" id="topAvatar">DP</div>
+        <div><b id="topName">Dr. Priya</b><small id="topDept">CSE Department</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="page-head">
+      <div>
+        <h1>Courses</h1>
+        <p>Manage all the courses you handle this semester.</p>
+      </div>
+      <button class="btn btn-primary" id="addBtn">＋ Add Course</button>
+    </div>
+
+    <section class="summary">
+      <div class="sum"><b id="sCourses">0</b><span>Total Courses</span></div>
+      <div class="sum"><b id="sStudents">0</b><span>Total Students</span></div>
+      <div class="sum"><b id="sAttendance">0%</b><span>Average Attendance</span></div>
+      <div class="sum"><b id="sProgress">0%</b><span>Average Progress</span></div>
+    </section>
+
+    <section class="toolbar">
+      <div class="s"><input type="text" id="searchInput" placeholder="Search by course name, code or class"></div>
+      <select id="categoryFilter">
+        <option value="all">All Categories</option>
+        <option>Core</option>
+        <option>Elective</option>
+        <option>Lab</option>
+      </select>
+      <select id="statusFilter">
+        <option value="all">All Status</option>
+        <option>Active</option>
+        <option>Completed</option>
+        <option>Upcoming</option>
+      </select>
+      <div class="view-toggle">
+        <button id="gridBtn" class="on" title="Card view">▦ Cards</button>
+        <button id="tableBtn" title="Table view">☰ Table</button>
+      </div>
+    </section>
+
+    <div id="courseArea"></div>
+  </main>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal" id="formModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="formTitle">Add Course</h3><button class="close" data-close="formModal">×</button></div>
+    <form id="courseForm" novalidate>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field full"><label for="fName">Course Name</label><input type="text" id="fName" placeholder="e.g. Machine Learning"><div class="err" id="e-fName"></div></div>
+          <div class="field"><label for="fCode">Course Code</label><input type="text" id="fCode" placeholder="e.g. CSE610"><div class="err" id="e-fCode"></div></div>
+          <div class="field"><label for="fSem">Semester</label>
+            <select id="fSem"><option>I</option><option>II</option><option>III</option><option>IV</option><option>V</option><option selected>VI</option><option>VII</option><option>VIII</option></select>
+          </div>
+          <div class="field"><label for="fClass">Class</label>
+            <select id="fClass"><option>CSE A</option><option>CSE B</option><option>CSE C</option><option>IT A</option><option>IT B</option></select>
+          </div>
+          <div class="field"><label for="fCategory">Category</label>
+            <select id="fCategory"><option>Core</option><option>Elective</option><option>Lab</option></select>
+          </div>
+          <div class="field"><label for="fStudents">Students</label><input type="number" id="fStudents" min="1" max="200" placeholder="e.g. 40"><div class="err" id="e-fStudents"></div></div>
+          <div class="field"><label for="fStatus">Status</label>
+            <select id="fStatus"><option>Active</option><option>Upcoming</option><option>Completed</option></select>
+          </div>
+          <div class="field"><label for="fProgress">Progress (%)</label><input type="number" id="fProgress" min="0" max="100" value="0"><div class="err" id="e-fProgress"></div></div>
+          <div class="field"><label for="fAttendance">Attendance (%)</label><input type="number" id="fAttendance" min="0" max="100" value="85"><div class="err" id="e-fAttendance"></div></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-light" data-close="formModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Course</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View modal -->
+<div class="modal" id="viewModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Course Details</h3><button class="close" data-close="viewModal">×</button></div>
+    <div class="modal-body" id="viewBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-light" data-close="viewModal">Close</button>
+      <button class="btn btn-dark" id="goAttendance">Mark Attendance</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Data ---------- */
+  const defaultCourses = [
+    {id:1,name:"Web Technology",code:"CSE601",semester:"VI",className:"CSE A",category:"Core",students:42,attendance:90,progress:78,status:"Active"},
+    {id:2,name:"Database Management Systems",code:"CSE402",semester:"IV",className:"CSE B",category:"Core",students:40,attendance:86,progress:72,status:"Active"},
+    {id:3,name:"Object Oriented Programming",code:"CSE302",semester:"III",className:"CSE A",category:"Core",students:45,attendance:88,progress:85,status:"Active"},
+    {id:4,name:"Computer Networks",code:"CSE503",semester:"V",className:"CSE C",category:"Core",students:38,attendance:84,progress:65,status:"Active"},
+    {id:5,name:"Cloud Computing",code:"CSE704",semester:"VII",className:"CSE B",category:"Elective",students:41,attendance:87,progress:58,status:"Active"},
+    {id:6,name:"Software Engineering",code:"CSE505",semester:"V",className:"CSE A",category:"Core",students:42,attendance:87,progress:70,status:"Active"}
+  ];
+
+  function load(key, fallback) {
+    try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+  let courses = load("facultyCourses", defaultCourses);
+  const profile = load("facultyProfile", {fullName:"Dr. Priya Raman", department:"Computer Science and Engineering"});
+  function saveCourses() { localStorage.setItem("facultyCourses", JSON.stringify(courses)); }
+
+  const $ = function (id) { return document.getElementById(id); };
+  let viewMode = "grid";
+  let editingId = null;
+  let viewingId = null;
+
+  function showToast(msg, type) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + (type || "");
+    setTimeout(function () { t.classList.remove("show"); }, 2400);
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  /* ---------- Top bar profile + notifications ---------- */
+  const initials = profile.fullName.split(" ").filter(function (p) { return p && p.indexOf(".") === -1; }).slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase();
+  $("topAvatar").textContent = initials || "FM";
+  $("topName").textContent = profile.fullName;
+  $("topDept").textContent = profile.department.replace("Computer Science and Engineering", "CSE Department");
+
+  let notifications = [];
+  try { notifications = JSON.parse(localStorage.getItem("facultyNotifications")) || []; } catch (e) {}
+  const unread = notifications.filter(function (n) { return !n.read; }).length;
+  $("badge").textContent = unread;
+  $("badge").style.display = unread ? "grid" : "none";
+  $("notifList").innerHTML = notifications.length ? notifications.map(function (n) {
+    return '<div class="notif ' + (n.read ? "" : "unread") + '">' + esc(n.text) + '<small>' + esc(n.time) + '</small></div>';
+  }).join("") : '<div class="notif">No notifications yet.</div>';
+  $("bellBtn").addEventListener("click", function (e) { e.stopPropagation(); $("dropdown").classList.toggle("show"); });
+  $("dropdown").addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { $("dropdown").classList.remove("show"); });
+
+  /* ---------- Summary ---------- */
+  function renderSummary() {
+    const n = courses.length;
+    $("sCourses").textContent = n;
+    $("sStudents").textContent = courses.reduce(function (s, c) { return s + Number(c.students); }, 0);
+    $("sAttendance").textContent = (n ? Math.round(courses.reduce(function (s, c) { return s + Number(c.attendance); }, 0) / n) : 0) + "%";
+    $("sProgress").textContent = (n ? Math.round(courses.reduce(function (s, c) { return s + Number(c.progress); }, 0) / n) : 0) + "%";
+  }
+
+  /* ---------- Filtering + rendering ---------- */
+  function filtered() {
+    const q = $("searchInput").value.trim().toLowerCase();
+    const cat = $("categoryFilter").value;
+    const st = $("statusFilter").value;
+    return courses.filter(function (c) {
+      const matchQ = !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.className.toLowerCase().includes(q);
+      return matchQ && (cat === "all" || c.category === cat) && (st === "all" || c.status === st);
+    });
+  }
+
+  function render() {
+    renderSummary();
+    const list = filtered();
+    const area = $("courseArea");
+
+    if (!list.length) {
+      area.innerHTML = '<div class="empty"><span>📚</span>No courses found. Try changing your search or filters.</div>';
+      return;
+    }
+
+    if (viewMode === "grid") {
+      area.innerHTML = '<div class="grid">' + list.map(function (c) {
+        return '<div class="course">' +
+          '<div class="top"><h3>' + esc(c.name) + '</h3><span class="tag ' + c.status + '">' + c.status + '</span></div>' +
+          '<div class="code">' + esc(c.code) + ' • ' + esc(c.category) + '</div>' +
+          '<div class="meta"><span>Semester: <b>' + esc(c.semester) + '</b></span><span>Class: <b>' + esc(c.className) + '</b></span><span>Students: <b>' + c.students + '</b></span></div>' +
+          '<div class="bl"><span>Progress</span><b>' + c.progress + '%</b></div><div class="bar"><i style="width:' + c.progress + '%"></i></div>' +
+          '<div class="bl"><span>Attendance</span><b>' + c.attendance + '%</b></div><div class="bar green"><i style="width:' + c.attendance + '%"></i></div>' +
+          '<div class="card-actions">' +
+            '<button class="btn btn-dark btn-sm" data-act="view" data-id="' + c.id + '">View</button>' +
+            '<button class="btn btn-light btn-sm" data-act="edit" data-id="' + c.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-act="delete" data-id="' + c.id + '">Delete</button>' +
+          '</div></div>';
+      }).join("") + '</div>';
+    } else {
+      area.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+        '<th>Course</th><th>Code</th><th>Sem</th><th>Class</th><th>Students</th><th>Attendance</th><th>Progress</th><th>Status</th><th>Actions</th>' +
+        '</tr></thead><tbody>' + list.map(function (c) {
+          return '<tr><td><b>' + esc(c.name) + '</b><br><small style="color:var(--muted)">' + esc(c.category) + '</small></td>' +
+            '<td>' + esc(c.code) + '</td><td>' + esc(c.semester) + '</td><td>' + esc(c.className) + '</td><td>' + c.students + '</td>' +
+            '<td>' + c.attendance + '%</td>' +
+            '<td><span class="mini"><i style="width:' + c.progress + '%"></i></span>' + c.progress + '%</td>' +
+            '<td><span class="tag ' + c.status + '">' + c.status + '</span></td>' +
+            '<td><div class="row-actions">' +
+              '<button class="btn btn-dark btn-sm" data-act="view" data-id="' + c.id + '">View</button>' +
+              '<button class="btn btn-light btn-sm" data-act="edit" data-id="' + c.id + '">Edit</button>' +
+              '<button class="btn btn-danger btn-sm" data-act="delete" data-id="' + c.id + '">Delete</button>' +
+            '</div></td></tr>';
+        }).join("") + '</tbody></table></div>';
+    }
+  }
+
+  $("searchInput").addEventListener("input", render);
+  $("categoryFilter").addEventListener("change", render);
+  $("statusFilter").addEventListener("change", render);
+  $("gridBtn").addEventListener("click", function () { viewMode = "grid"; $("gridBtn").classList.add("on"); $("tableBtn").classList.remove("on"); render(); });
+  $("tableBtn").addEventListener("click", function () { viewMode = "table"; $("tableBtn").classList.add("on"); $("gridBtn").classList.remove("on"); render(); });
+
+  /* ---------- Modals ---------- */
+  function openModal(id) { $(id).classList.add("show"); }
+  function closeModal(id) { $(id).classList.remove("show"); }
+  document.querySelectorAll("[data-close]").forEach(function (b) {
+    b.addEventListener("click", function () { closeModal(b.dataset.close); });
+  });
+  document.querySelectorAll(".modal").forEach(function (m) {
+    m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("show"); });
+  });
+
+  /* ---------- Add / Edit ---------- */
+  const formFields = ["fName","fCode","fStudents","fProgress","fAttendance"];
+  function clearErrors() {
+    formFields.forEach(function (f) { $("e-" + f).textContent = ""; $(f).classList.remove("invalid"); });
+  }
+  function setErr(id, msg) { $("e-" + id).textContent = msg; $(id).classList.toggle("invalid", !!msg); return !msg; }
+
+  function openForm(course) {
+    clearErrors();
+    editingId = course ? course.id : null;
+    $("formTitle").textContent = course ? "Edit Course" : "Add Course";
+    $("saveBtn").textContent = course ? "Update Course" : "Save Course";
+    $("fName").value = course ? course.name : "";
+    $("fCode").value = course ? course.code : "";
+    $("fSem").value = course ? course.semester : "VI";
+    $("fClass").value = course ? course.className : "CSE A";
+    $("fCategory").value = course ? course.category : "Core";
+    $("fStudents").value = course ? course.students : "";
+    $("fStatus").value = course ? course.status : "Active";
+    $("fProgress").value = course ? course.progress : 0;
+    $("fAttendance").value = course ? course.attendance : 85;
+    openModal("formModal");
+  }
+  $("addBtn").addEventListener("click", function () { openForm(null); });
+
+  $("courseForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const name = $("fName").value.trim();
+    const code = $("fCode").value.trim().toUpperCase();
+    const students = Number($("fStudents").value);
+    const progress = Number($("fProgress").value);
+    const attendance = Number($("fAttendance").value);
+
+    let ok = true;
+    ok = setErr("fName", name.length < 3 ? "Enter a course name (min 3 characters)." : "") && ok;
+    const duplicate = courses.some(function (c) { return c.code === code && c.id !== editingId; });
+    ok = setErr("fCode", !code ? "Course code is required." : duplicate ? "This course code already exists." : "") && ok;
+    ok = setErr("fStudents", !(students >= 1 && students <= 200) ? "Enter students between 1 and 200." : "") && ok;
+    ok = setErr("fProgress", !(progress >= 0 && progress <= 100) ? "Progress must be 0-100." : "") && ok;
+    ok = setErr("fAttendance", !(attendance >= 0 && attendance <= 100) ? "Attendance must be 0-100." : "") && ok;
+    if (!ok) return;
+
+    const data = {
+      name: name, code: code, semester: $("fSem").value, className: $("fClass").value,
+      category: $("fCategory").value, students: students, attendance: attendance,
+      progress: progress, status: $("fStatus").value
+    };
+
+    if (editingId) {
+      courses = courses.map(function (c) { return c.id === editingId ? Object.assign({}, c, data) : c; });
+      showToast("Course updated successfully.", "ok");
+    } else {
+      const newId = courses.reduce(function (m, c) { return Math.max(m, c.id); }, 0) + 1;
+      courses.push(Object.assign({id: newId}, data));
+      showToast("Course added successfully.", "ok");
+    }
+    saveCourses();
+    closeModal("formModal");
+    render();
+  });
+
+  /* ---------- View details ---------- */
+  function openView(id) {
+    const c = courses.find(function (x) { return x.id === id; });
+    if (!c) return;
+    viewingId = id;
+    $("viewBody").innerHTML =
+      '<div class="detail-hero"><h2>' + esc(c.name) + '</h2><small>' + esc(c.code) + ' • ' + esc(c.category) + ' • <span class="tag ' + c.status + '">' + c.status + '</span></small></div>' +
+      '<div class="detail-grid">' +
+        '<div><small>Semester</small><b>' + esc(c.semester) + '</b></div>' +
+        '<div><small>Class</small><b>' + esc(c.className) + '</b></div>' +
+        '<div><small>Enrolled Students</small><b>' + c.students + '</b></div>' +
+        '<div><small>Average Attendance</small><b>' + c.attendance + '%</b></div>' +
+      '</div>' +
+      '<div class="slider-box">' +
+        '<div class="slider-top"><span>Syllabus Progress</span><span id="sliderVal">' + c.progress + '%</span></div>' +
+        '<input type="range" id="progressSlider" min="0" max="100" value="' + c.progress + '">' +
+        '<div class="bar" style="margin:10px 0 0"><i id="sliderBar" style="width:' + c.progress + '%"></i></div>' +
+        '<button class="btn btn-primary btn-sm" id="saveProgress" style="margin-top:12px">Update Progress</button>' +
+      '</div>';
+
+    $("progressSlider").addEventListener("input", function () {
+      $("sliderVal").textContent = this.value + "%";
+      $("sliderBar").style.width = this.value + "%";
+    });
+    $("saveProgress").addEventListener("click", function () {
+      const value = Number($("progressSlider").value);
+      courses = courses.map(function (x) {
+        if (x.id !== id) return x;
+        const updated = Object.assign({}, x, {progress: value});
+        if (value === 100) updated.status = "Completed";
+        return updated;
+      });
+      saveCourses();
+      render();
+      showToast("Progress updated to " + value + "%.", "ok");
+      openView(id);
+    });
+    openModal("viewModal");
+  }
+  $("goAttendance").addEventListener("click", function () {
+    window.location.href = "attendance.html?course=" + viewingId;
+  });
+
+  /* ---------- Card / table button actions ---------- */
+  $("courseArea").addEventListener("click", function (e) {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    const course = courses.find(function (c) { return c.id === id; });
+    if (btn.dataset.act === "view") openView(id);
+    if (btn.dataset.act === "edit") openForm(course);
+    if (btn.dataset.act === "delete") {
+      if (confirm('Delete "' + course.name + '"? This cannot be undone.')) {
+        courses = courses.filter(function (c) { return c.id !== id; });
+        saveCourses();
+        render();
+        showToast("Course deleted.", "bad");
+      }
+    }
+  });
+
+  /* ---------- Open a course from dashboard link (?view=ID) ---------- */
+  render();
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("view")) openView(Number(params.get("view")));
+
+  /* ---------- Mobile sidebar ---------- */
+  function toggleMenu(open) { $("sidebar").classList.toggle("open", open); $("overlay").classList.toggle("show", open); }
+  $("menuBtn").addEventListener("click", function () { toggleMenu(true); });
+  $("overlay").addEventListener("click", function () { toggleMenu(false); });
+
+  /* ---------- Logout ---------- */
+  $("logoutBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("facultyLoggedIn");
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>

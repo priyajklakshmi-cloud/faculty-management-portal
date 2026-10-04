@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile | Faculty Management Platform</title>
+<script>
+  if (localStorage.getItem("facultyLoggedIn") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
+<style>
+:root{
+  --primary:#d98449;--primary-dark:#b9662f;--gold:#e8b35c;
+  --dark:#24201d;--dark-2:#332c27;--background:#f7f3ee;
+  --card:#ffffff;--text:#29251f;--muted:#7a7068;--border:#e8dfd4;
+  --danger:#c0392b;--success:#2e8b57;
+  --shadow:0 6px 20px rgba(36,32,29,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--background);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button,input,textarea{font-family:inherit}
+
+/* ---------- Sidebar ---------- */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--dark);color:#e9e0d6;display:flex;flex-direction:column;padding:22px 16px;z-index:100;transition:transform .3s}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.sb-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--gold));display:grid;place-items:center;font-size:22px}
+.sb-brand h3{font-size:15px;line-height:1.2}
+.nav{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;color:#cfc4b8;transition:.2s}
+.nav a span.ic{width:22px;text-align:center;font-size:16px}
+.nav a:hover{background:var(--dark-2);color:#fff;transform:translateX(3px)}
+.nav a.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 6px 14px rgba(217,132,73,.35)}
+.nav .logout{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;border-radius:0;color:#f0a79d}
+.nav .logout:hover{background:transparent;color:#ff8f80}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ---------- Main + topbar ---------- */
+.main{margin-left:250px;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:80;background:rgba(247,243,238,.92);backdrop-filter:blur(8px);display:flex;align-items:center;gap:16px;padding:14px 30px;border-bottom:1px solid var(--border)}
+.menu-btn{display:none;background:var(--dark);color:#fff;border:none;width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer}
+.search{flex:1;max-width:420px;position:relative}
+.search input{width:100%;padding:11px 14px 11px 40px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-size:14px;outline:none;transition:.2s}
+.search input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15)}
+.search::before{content:"🔍";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.bell{position:relative}
+.bell-btn{background:#fff;border:1.5px solid var(--border);width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;transition:.2s}
+.bell-btn:hover{border-color:var(--primary)}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.dropdown{display:none;position:absolute;right:0;top:52px;width:320px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(36,32,29,.18);overflow:hidden}
+.dropdown.show{display:block}
+.dropdown header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.notif{padding:12px 16px;border-bottom:1px solid #f3ece3;font-size:13px;line-height:1.4}
+.notif.unread{background:#fdf6ee}
+.notif small{color:var(--muted);display:block;margin-top:3px}
+.user{display:flex;align-items:center;gap:11px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.user b{display:block;font-size:14px}
+.user small{color:var(--muted);font-size:12px}
+
+.content{padding:28px 30px 40px;max-width:1150px}
+.page-title{margin-bottom:20px}
+.page-title h1{font-size:26px}
+.page-title p{color:var(--muted);font-size:14px;margin-top:4px}
+
+/* ---------- Profile header ---------- */
+.p-header{
+  background:linear-gradient(120deg,#24201d 0%,#4a3a2e 60%,#b9662f 150%);color:#fff;border-radius:22px;
+  padding:30px;display:flex;align-items:center;gap:28px;position:relative;overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow)
+}
+.p-header::after{content:"";position:absolute;width:300px;height:300px;right:-90px;top:-110px;border-radius:50%;background:radial-gradient(circle,rgba(232,179,92,.4),transparent 70%)}
+.photo{
+  width:120px;height:120px;border-radius:50%;flex-shrink:0;position:relative;z-index:1;
+  background:linear-gradient(135deg,var(--primary),var(--gold));border:5px solid rgba(255,255,255,.25);
+  display:grid;place-items:center;font-size:42px;font-weight:700;color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.3)
+}
+.p-info{position:relative;z-index:1;flex:1}
+.p-info h2{font-size:26px;margin-bottom:4px}
+.p-info .desig{color:var(--gold);font-weight:600;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:7px 13px;border-radius:20px;font-size:13px}
+.status{background:rgba(46,139,87,.25);border-color:rgba(108,192,139,.6);color:#b8f0cf}
+.status::before{content:"● ";color:#6cc08b}
+
+/* ---------- Cards / forms ---------- */
+.layout{display:grid;grid-template-columns:1.7fr 1fr;gap:22px;align-items:start}
+.card{background:var(--card);border-radius:20px;padding:26px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:22px}
+.card h3{font-size:18px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field input,.field textarea{
+  width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;
+  font-size:14px;color:var(--text);outline:none;transition:.2s
+}
+.field textarea{min-height:130px;resize:vertical;line-height:1.5}
+.field input:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15);background:#fff}
+.field input[readonly]{background:#f1ebe3;color:var(--muted);cursor:not-allowed}
+.field input.invalid{border-color:var(--danger)}
+.field .err{color:var(--danger);font-size:12px;margin-top:4px;min-height:14px}
+.full{grid-column:1/-1}
+
+.skills{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;min-height:36px}
+.skill{display:flex;align-items:center;gap:8px;background:#fdeede;color:var(--primary-dark);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid #f4d4b6;animation:pop .25s ease}
+.skill button{background:none;border:none;cursor:pointer;color:var(--primary-dark);font-size:15px;line-height:1;opacity:.6}
+.skill button:hover{opacity:1;color:var(--danger)}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+.skill-add{display:flex;gap:10px}
+.skill-add input{flex:1;padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:14px;outline:none;background:#fcfaf7}
+.skill-add input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15)}
+
+.btn{padding:12px 22px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:.25s}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 8px 18px rgba(217,132,73,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 22px rgba(217,132,73,.4)}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-dark:hover{background:var(--primary-dark)}
+.btn-light{background:#fff;border:1.5px solid var(--border);color:var(--text)}
+.btn-light:hover{background:var(--background)}
+.save-bar{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap}
+
+.quick-list{list-style:none}
+.quick-list li{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f3ece3;font-size:14px}
+.quick-list li:last-child{border:none}
+.quick-list span{color:var(--muted)}
+.quick-list b{text-align:right}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:.3s;z-index:200}
+.toast.show{transform:none;opacity:1}
+.toast.ok{background:var(--success)}
+.toast.bad{background:var(--danger)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1100px){.layout{grid-template-columns:1fr}}
+@media (max-width:992px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .overlay.show{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+}
+@media (max-width:640px){
+  .p-header{flex-direction:column;text-align:center;padding:26px 20px}
+  .chips{justify-content:center}
+  .form-grid{grid-template-columns:1fr}
+  .user div{display:none}
+  .dropdown{width:280px;right:-60px}
+  .save-bar .btn{flex:1}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">🎓</div>
+    <div><h3>Faculty Management<br>Platform</h3></div>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="ic">🏠</span>Dashboard</a>
+    <a href="faculty-profile.html" class="active"><span class="ic">👤</span>My Profile</a>
+    <a href="courses.html"><span class="ic">📚</span>Courses</a>
+    <a href="students.html"><span class="ic">🧑‍🎓</span>Students</a>
+    <a href="attendance.html"><span class="ic">✅</span>Attendance</a>
+    <a href="assignments.html"><span class="ic">📝</span>Assignments</a>
+    <a href="schedule.html"><span class="ic">🗓️</span>Schedule</a>
+    <a href="announcements.html"><span class="ic">📢</span>Announcements</a>
+    <a href="reports.html"><span class="ic">📊</span>Reports</a>
+    <a href="#" class="logout" id="logoutBtn"><span class="ic">🚪</span>Logout</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="search"><input type="text" id="searchInput" placeholder="Search a page (e.g. courses) and press Enter"></div>
+    <div class="top-right">
+      <div class="bell">
+        <button class="bell-btn" id="bellBtn">🔔</button>
+        <span class="badge" id="badge">0</span>
+        <div class="dropdown" id="dropdown">
+          <header>Notifications</header>
+          <div id="notifList"></div>
+        </div>
+      </div>
+      <div class="user">
+        <div class="avatar" id="topAvatar">DP</div>
+        <div><b id="topName">Dr. Priya</b><small id="topDept">CSE Department</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="page-title">
+      <h1>My Profile</h1>
+      <p>View and update your academic and personal information.</p>
+    </div>
+
+    <!-- Profile header -->
+    <section class="p-header">
+      <div class="photo" id="photo">DP</div>
+      <div class="p-info">
+        <h2 id="hName">Dr. Priya Raman</h2>
+        <div class="desig" id="hDesig">Associate Professor</div>
+        <div class="chips">
+          <span class="chip" id="hId">🆔 FAC-CSE-1024</span>
+          <span class="chip" id="hDept">🏫 Computer Science and Engineering</span>
+          <span class="chip" id="hEmail">✉️ priya@faculty.edu</span>
+          <span class="chip" id="hPhone">📞 +91 98765 43210</span>
+          <span class="chip status">Active</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <div>
+        <form id="profileForm" novalidate>
+          <!-- Personal information -->
+          <section class="card">
+            <h3>👤 Personal Information</h3>
+            <div class="form-grid">
+              <div class="field"><label for="fullName">Full Name</label><input type="text" id="fullName"><div class="err" id="e-fullName"></div></div>
+              <div class="field"><label for="facultyId">Faculty ID</label><input type="text" id="facultyId" readonly></div>
+              <div class="field"><label for="email">Email</label><input type="email" id="email"><div class="err" id="e-email"></div></div>
+              <div class="field"><label for="phone">Phone</label><input type="text" id="phone"><div class="err" id="e-phone"></div></div>
+              <div class="field"><label for="department">Department</label><input type="text" id="department"><div class="err" id="e-department"></div></div>
+              <div class="field"><label for="designation">Designation</label><input type="text" id="designation"><div class="err" id="e-designation"></div></div>
+              <div class="field"><label for="qualification">Qualification</label><input type="text" id="qualification"></div>
+              <div class="field"><label for="experience">Experience</label><input type="text" id="experience" placeholder="e.g. 12 Years"></div>
+              <div class="field full"><label for="joiningDate">Joining Date</label><input type="date" id="joiningDate"></div>
+            </div>
+          </section>
+
+          <!-- Professional summary -->
+          <section class="card">
+            <h3>📝 Professional Summary</h3>
+            <div class="field">
+              <textarea id="bio" maxlength="500" placeholder="Write a short professional bio..."></textarea>
+              <div class="err" id="bioCount" style="color:var(--muted)">0 / 500</div>
+            </div>
+          </section>
+
+          <div class="save-bar">
+            <button type="button" class="btn btn-light" id="resetBtn">Reset Changes</button>
+            <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+      <div>
+        <!-- Skills -->
+        <section class="card">
+          <h3>🛠️ Skills</h3>
+          <div class="skills" id="skillList"></div>
+          <div class="skill-add">
+            <input type="text" id="skillInput" maxlength="30" placeholder="Add a new skill">
+            <button type="button" class="btn btn-dark" id="addSkill">Add</button>
+          </div>
+          <div class="err" id="skillErr" style="color:var(--danger);font-size:12px;margin-top:6px;min-height:14px"></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:6px">Click Save Changes to store new skills permanently.</p>
+        </section>
+
+        <!-- Quick summary -->
+        <section class="card">
+          <h3>📌 Quick Summary</h3>
+          <ul class="quick-list">
+            <li><span>Faculty ID</span><b id="qId">-</b></li>
+            <li><span>Designation</span><b id="qDesig">-</b></li>
+            <li><span>Experience</span><b id="qExp">-</b></li>
+            <li><span>Joined</span><b id="qJoin">-</b></li>
+            <li><span>Skills</span><b id="qSkills">0</b></li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Data ---------- */
+  const defaultProfile = {
+    fullName:"Dr. Priya Raman", facultyId:"FAC-CSE-1024", email:"priya@faculty.edu",
+    phone:"+91 98765 43210", department:"Computer Science and Engineering",
+    designation:"Associate Professor", qualification:"Ph.D. in Computer Science",
+    experience:"12 Years", joiningDate:"2014-06-15",
+    bio:"Associate Professor with a passion for teaching web technologies, databases and cloud computing.",
+    skills:["HTML","CSS","JavaScript","Python","Java","SQL","Cloud Computing"]
+  };
+
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem("facultyProfile");
+      if (raw) return Object.assign({}, defaultProfile, JSON.parse(raw));
+    } catch (e) {}
+    localStorage.setItem("facultyProfile", JSON.stringify(defaultProfile));
+    return Object.assign({}, defaultProfile);
+  }
+
+  let saved = loadProfile();                       // what is stored
+  let skills = saved.skills.slice();               // working copy of skills
+
+  const fields = ["fullName","facultyId","email","phone","department","designation","qualification","experience","joiningDate","bio"];
+  const $ = function (id) { return document.getElementById(id); };
+
+  function showToast(msg, type) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + (type || "");
+    setTimeout(function () { t.classList.remove("show"); }, 2400);
+  }
+
+  function getInitials(name) {
+    return name.split(" ").filter(function (p) { return p && p.indexOf(".") === -1; })
+      .slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase() || "FM";
+  }
+  function formatDate(value) {
+    if (!value) return "-";
+    const d = new Date(value);
+    return isNaN(d) ? value : d.toLocaleDateString("en-IN", {day:"numeric", month:"long", year:"numeric"});
+  }
+
+  /* ---------- Render ---------- */
+  function renderHeader(p) {
+    const initials = getInitials(p.fullName);
+    $("photo").textContent = initials;
+    $("topAvatar").textContent = initials;
+    $("topName").textContent = p.fullName;
+    $("topDept").textContent = p.department.replace("Computer Science and Engineering", "CSE Department");
+    $("hName").textContent = p.fullName;
+    $("hDesig").textContent = p.designation;
+    $("hId").textContent = "🆔 " + p.facultyId;
+    $("hDept").textContent = "🏫 " + p.department;
+    $("hEmail").textContent = "✉️ " + p.email;
+    $("hPhone").textContent = "📞 " + p.phone;
+    $("qId").textContent = p.facultyId;
+    $("qDesig").textContent = p.designation;
+    $("qExp").textContent = p.experience || "-";
+    $("qJoin").textContent = formatDate(p.joiningDate);
+    $("qSkills").textContent = skills.length;
+  }
+
+  function fillForm(p) {
+    fields.forEach(function (f) { $(f).value = p[f] || ""; });
+    $("bioCount").textContent = $("bio").value.length + " / 500";
+  }
+
+  function renderSkills() {
+    const box = $("skillList");
+    if (!skills.length) {
+      box.innerHTML = '<span style="color:var(--muted);font-size:13px">No skills added yet.</span>';
+    } else {
+      box.innerHTML = skills.map(function (s, i) {
+        return '<span class="skill">' + s + '<button type="button" data-i="' + i + '" title="Remove">×</button></span>';
+      }).join("");
+    }
+    $("qSkills").textContent = skills.length;
+  }
+
+  fillForm(saved);
+  renderHeader(saved);
+  renderSkills();
+
+  /* ---------- Skills ---------- */
+  function addSkill() {
+    const input = $("skillInput");
+    const value = input.value.trim();
+    const err = $("skillErr");
+    err.textContent = "";
+    if (!value) { err.textContent = "Please type a skill name."; return; }
+    if (skills.some(function (s) { return s.toLowerCase() === value.toLowerCase(); })) {
+      err.textContent = "This skill is already added."; return;
+    }
+    skills.push(value.charAt(0).toUpperCase() + value.slice(1));
+    input.value = "";
+    renderSkills();
+  }
+  $("addSkill").addEventListener("click", addSkill);
+  $("skillInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); addSkill(); }
+  });
+  $("skillList").addEventListener("click", function (e) {
+    const btn = e.target.closest("button");
+    if (btn) { skills.splice(Number(btn.dataset.i), 1); renderSkills(); }
+  });
+
+  $("bio").addEventListener("input", function () {
+    $("bioCount").textContent = this.value.length + " / 500";
+  });
+
+  /* ---------- Validation + Save ---------- */
+  function setError(id, msg) {
+    $("e-" + id).textContent = msg;
+    $(id).classList.toggle("invalid", !!msg);
+    return !msg;
+  }
+
+  function validate() {
+    let ok = true;
+    ok = setError("fullName", $("fullName").value.trim().length < 3 ? "Enter your full name (min 3 characters)." : "") && ok;
+    ok = setError("email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($("email").value.trim()) ? "" : "Enter a valid email address.") && ok;
+    ok = setError("phone", /^[+]?[0-9\s-]{10,16}$/.test($("phone").value.trim()) ? "" : "Enter a valid phone number (10-15 digits).") && ok;
+    ok = setError("department", $("department").value.trim() ? "" : "Department is required.") && ok;
+    ok = setError("designation", $("designation").value.trim() ? "" : "Designation is required.") && ok;
+    return ok;
+  }
+
+  $("profileForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!validate()) { showToast("Please fix the highlighted fields.", "bad"); return; }
+    const updated = {};
+    fields.forEach(function (f) { updated[f] = $(f).value.trim(); });
+    updated.skills = skills.slice();
+    localStorage.setItem("facultyProfile", JSON.stringify(updated));
+    saved = updated;
+    renderHeader(saved);
+    showToast("Profile saved successfully!", "ok");
+  });
+
+  $("resetBtn").addEventListener("click", function () {
+    skills = saved.skills.slice();
+    fillForm(saved);
+    renderSkills();
+    fields.forEach(function (f) { if ($("e-" + f)) setError(f, ""); });
+    showToast("Changes reset to last saved version.");
+  });
+
+  /* ---------- Notifications ---------- */
+  let notifications = [];
+  try { notifications = JSON.parse(localStorage.getItem("facultyNotifications")) || []; } catch (e) {}
+  const unread = notifications.filter(function (n) { return !n.read; }).length;
+  $("badge").textContent = unread;
+  $("badge").style.display = unread ? "grid" : "none";
+  $("notifList").innerHTML = notifications.length ? notifications.map(function (n) {
+    return '<div class="notif ' + (n.read ? "" : "unread") + '">' + n.text + '<small>' + n.time + '</small></div>';
+  }).join("") : '<div class="notif">No notifications yet.</div>';
+  $("bellBtn").addEventListener("click", function (e) { e.stopPropagation(); $("dropdown").classList.toggle("show"); });
+  $("dropdown").addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { $("dropdown").classList.remove("show"); });
+
+  /* ---------- Top search = quick page finder ---------- */
+  const pages = {
+    dashboard:"dashboard.html", profile:"faculty-profile.html", course:"courses.html",
+    student:"students.html", attendance:"attendance.html", assignment:"assignments.html",
+    schedule:"schedule.html", timetable:"schedule.html", announcement:"announcements.html", report:"reports.html"
+  };
+  $("searchInput").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    const q = this.value.trim().toLowerCase();
+    const key = Object.keys(pages).find(function (k) { return q.includes(k); });
+    if (key) window.location.href = pages[key];
+    else showToast("No matching page found.", "bad");
+  });
+
+  /* ---------- Mobile sidebar ---------- */
+  function toggleMenu(open) {
+    $("sidebar").classList.toggle("open", open);
+    $("overlay").classList.toggle("show", open);
+  }
+  $("menuBtn").addEventListener("click", function () { toggleMenu(true); });
+  $("overlay").addEventListener("click", function () { toggleMenu(false); });
+
+  /* ---------- Logout ---------- */
+  $("logoutBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("facultyLoggedIn");
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>

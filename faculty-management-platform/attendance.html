@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance | Faculty Management Platform</title>
+<script>
+  if (localStorage.getItem("facultyLoggedIn") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
+<style>
+:root{
+  --primary:#d98449;--primary-dark:#b9662f;--gold:#e8b35c;
+  --dark:#24201d;--dark-2:#332c27;--background:#f7f3ee;
+  --card:#ffffff;--text:#29251f;--muted:#7a7068;--border:#e8dfd4;
+  --danger:#c0392b;--success:#2e8b57;--info:#3a7bd5;
+  --shadow:0 6px 20px rgba(36,32,29,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--background);color:var(--text);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button,input,select{font-family:inherit}
+
+/* ---------- Sidebar ---------- */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--dark);color:#e9e0d6;display:flex;flex-direction:column;padding:22px 16px;z-index:100;transition:transform .3s}
+.sb-brand{display:flex;align-items:center;gap:12px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.sb-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--gold));display:grid;place-items:center;font-size:22px}
+.sb-brand h3{font-size:15px;line-height:1.2}
+.nav{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;color:#cfc4b8;transition:.2s}
+.nav a span.ic{width:22px;text-align:center;font-size:16px}
+.nav a:hover{background:var(--dark-2);color:#fff;transform:translateX(3px)}
+.nav a.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 6px 14px rgba(217,132,73,.35)}
+.nav .logout{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;border-radius:0;color:#f0a79d}
+.nav .logout:hover{background:transparent;color:#ff8f80}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+
+/* ---------- Main + topbar ---------- */
+.main{margin-left:250px;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:80;background:rgba(247,243,238,.92);backdrop-filter:blur(8px);display:flex;align-items:center;gap:16px;padding:14px 30px;border-bottom:1px solid var(--border)}
+.menu-btn{display:none;background:var(--dark);color:#fff;border:none;width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer}
+.top-title{font-weight:600;font-size:15px;color:var(--muted)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.bell{position:relative}
+.bell-btn{background:#fff;border:1.5px solid var(--border);width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;transition:.2s}
+.bell-btn:hover{border-color:var(--primary)}
+.badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+.dropdown{display:none;position:absolute;right:0;top:52px;width:320px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(36,32,29,.18);overflow:hidden}
+.dropdown.show{display:block}
+.dropdown header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.notif{padding:12px 16px;border-bottom:1px solid #f3ece3;font-size:13px;line-height:1.4}
+.notif.unread{background:#fdf6ee}
+.notif small{color:var(--muted);display:block;margin-top:3px}
+.user{display:flex;align-items:center;gap:11px}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.user b{display:block;font-size:14px}
+.user small{color:var(--muted);font-size:12px}
+
+.content{padding:28px 30px 40px}
+.page-head{margin-bottom:22px}
+.page-head h1{font-size:26px}
+.page-head p{color:var(--muted);font-size:14px;margin-top:4px}
+
+.btn{padding:11px 20px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:.25s}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 8px 18px rgba(217,132,73,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 22px rgba(217,132,73,.4)}
+.btn-success{background:linear-gradient(135deg,#2e8b57,#3fa86c);color:#fff;box-shadow:0 8px 18px rgba(46,139,87,.3)}
+.btn-success:hover{transform:translateY(-2px)}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-dark:hover{background:var(--primary-dark)}
+.btn-light{background:#fff;border:1.5px solid var(--border);color:var(--text)}
+.btn-light:hover{background:var(--background)}
+
+/* ---------- Selectors card ---------- */
+.selectors{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow);display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:16px;margin-bottom:22px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field select,.field input{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none;transition:.2s}
+.field select:focus,.field input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15);background:#fff}
+
+/* ---------- Layout ---------- */
+.layout{display:grid;grid-template-columns:1fr 330px;gap:22px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:var(--shadow);margin-bottom:22px}
+.card h3{font-size:17px;margin-bottom:16px}
+
+.list-tools{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.list-tools .s{flex:1;min-width:180px;position:relative}
+.list-tools .s input{width:100%;padding:11px 14px 11px 38px;border-radius:12px;border:1.5px solid var(--border);background:#fcfaf7;font-size:14px;outline:none}
+.list-tools .s input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(217,132,73,.15)}
+.list-tools .s::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px}
+
+.table-wrap{border:1px solid var(--border);border-radius:14px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{background:#faf5ee;text-align:left;padding:13px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid #f3ece3;font-size:14px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fdfaf6}
+.stu{display:flex;align-items:center;gap:11px}
+.s-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0}
+.mark{width:42px;height:38px;border-radius:10px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:16px;font-weight:700;transition:.2s;color:var(--muted)}
+.mark.p:hover{border-color:var(--success);color:var(--success)}
+.mark.a:hover{border-color:var(--danger);color:var(--danger)}
+.mark.p.on{background:var(--success);border-color:var(--success);color:#fff}
+.mark.a.on{background:var(--danger);border-color:var(--danger);color:#fff}
+.pbar{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.pbar .t{width:70px;height:7px;background:#f0e8de;border-radius:5px;overflow:hidden}
+.pbar .t i{display:block;height:100%;border-radius:5px}
+.good{background:linear-gradient(90deg,#2e8b57,#6cc08b)}
+.mid{background:linear-gradient(90deg,var(--primary),var(--gold))}
+.low{background:linear-gradient(90deg,#c0392b,#e57368)}
+.base{font-size:11px;color:var(--muted)}
+
+.empty{text-align:center;color:var(--muted);padding:44px 20px}
+.empty span{font-size:40px;display:block;margin-bottom:8px}
+
+/* ---------- Summary ---------- */
+.ring{width:150px;height:150px;border-radius:50%;margin:4px auto 18px;display:grid;place-items:center;transition:background .4s}
+.ring div{width:112px;height:112px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center}
+.ring b{font-size:28px;display:block;line-height:1}
+.ring small{color:var(--muted);font-size:12px}
+.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.cnt{border-radius:12px;padding:12px 8px;text-align:center}
+.cnt b{font-size:22px;display:block}
+.cnt span{font-size:12px}
+.cnt.pres{background:#e6f6ec;color:var(--success)}
+.cnt.abs{background:#fdeaea;color:var(--danger)}
+.cnt.un{background:#efeae3;color:var(--muted)}
+.save-box{display:flex;flex-direction:column;gap:10px}
+
+.sess{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.2s;font-size:13px}
+.sess:hover{border-color:var(--primary);background:#fdf6ee}
+.sess.cur{border-color:var(--primary);background:#fdf6ee}
+.sess b{font-size:13px}
+.pill{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.pill.good2{background:#e6f6ec;color:var(--success)}
+.pill.mid2{background:#fdf1d9;color:#a8741a}
+.pill.low2{background:#fdeaea;color:var(--danger)}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:.3s;z-index:300}
+.toast.show{transform:none;opacity:1}
+.toast.ok{background:var(--success)}
+.toast.bad{background:var(--danger)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1200px){.layout{grid-template-columns:1fr}.selectors{grid-template-columns:1fr 1fr}}
+@media (max-width:992px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .overlay.show{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .topbar{padding:12px 18px}
+  .content{padding:20px 18px 40px}
+}
+@media (max-width:640px){
+  .selectors{grid-template-columns:1fr}
+  .user div,.top-title{display:none}
+  .dropdown{width:280px;right:-60px}
+  .list-tools .btn{flex:1}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">🎓</div>
+    <div><h3>Faculty Management<br>Platform</h3></div>
+  </div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="ic">🏠</span>Dashboard</a>
+    <a href="faculty-profile.html"><span class="ic">👤</span>My Profile</a>
+    <a href="courses.html"><span class="ic">📚</span>Courses</a>
+    <a href="students.html"><span class="ic">🧑‍🎓</span>Students</a>
+    <a href="attendance.html" class="active"><span class="ic">✅</span>Attendance</a>
+    <a href="assignments.html"><span class="ic">📝</span>Assignments</a>
+    <a href="schedule.html"><span class="ic">🗓️</span>Schedule</a>
+    <a href="announcements.html"><span class="ic">📢</span>Announcements</a>
+    <a href="reports.html"><span class="ic">📊</span>Reports</a>
+    <a href="#" class="logout" id="logoutBtn"><span class="ic">🚪</span>Logout</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="top-title">Attendance Management</div>
+    <div class="top-right">
+      <div class="bell">
+        <button class="bell-btn" id="bellBtn">🔔</button>
+        <span class="badge" id="badge">0</span>
+        <div class="dropdown" id="dropdown"><header>Notifications</header><div id="notifList"></div></div>
+      </div>
+      <div class="user">
+        <div class="avatar" id="topAvatar">DP</div>
+        <div><b id="topName">Dr. Priya</b><small id="topDept">CSE Department</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="page-head">
+      <h1>Attendance</h1>
+      <p>Select a course, class and date, then mark each student Present or Absent.</p>
+    </div>
+
+    <section class="selectors">
+      <div class="field"><label for="courseSel">Course</label><select id="courseSel"></select></div>
+      <div class="field"><label for="classSel">Class</label><select id="classSel"></select></div>
+      <div class="field"><label for="dateSel">Date</label><input type="date" id="dateSel"></div>
+      <div class="field"><label for="searchInput">Search Student</label><input type="text" id="searchInput" placeholder="Name or ID"></div>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <div class="list-tools">
+          <h3 style="margin:0;flex:1" id="listTitle">Student List</h3>
+          <button class="btn btn-success" id="allPresent">✔ Mark All Present</button>
+          <button class="btn btn-light" id="resetBtn">Reset</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Student</th><th>ID</th><th>Present</th><th>Absent</th><th>Percentage</th></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div class="empty" id="emptyBox" style="display:none"><span>🧑‍🎓</span><div id="emptyText">No students found.</div></div>
+        </div>
+      </section>
+
+      <aside>
+        <section class="card">
+          <h3>Attendance Summary</h3>
+          <div class="ring" id="ring"><div><span><b id="ringPct">0%</b><small>Attendance</small></span></div></div>
+          <div class="counts">
+            <div class="cnt pres"><b id="cPresent">0</b><span>Present</span></div>
+            <div class="cnt abs"><b id="cAbsent">0</b><span>Absent</span></div>
+            <div class="cnt un"><b id="cUnmarked">0</b><span>Not marked</span></div>
+          </div>
+          <div class="save-box">
+            <button class="btn btn-primary" id="saveBtn">💾 Save Attendance</button>
+            <small style="color:var(--muted);font-size:12px;text-align:center">Every click is stored automatically. Saving also updates the course attendance on the dashboard.</small>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Recent Sessions</h3>
+          <div id="sessionList"></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Default data (used only if nothing is stored yet) ---------- */
+  const defaultCourses = [
+    {id:1,name:"Web Technology",code:"CSE601",semester:"VI",className:"CSE A",category:"Core",students:42,attendance:90,progress:78,status:"Active"},
+    {id:2,name:"Database Management Systems",code:"CSE402",semester:"IV",className:"CSE B",category:"Core",students:40,attendance:86,progress:72,status:"Active"},
+    {id:3,name:"Object Oriented Programming",code:"CSE302",semester:"III",className:"CSE A",category:"Core",students:45,attendance:88,progress:85,status:"Active"},
+    {id:4,name:"Computer Networks",code:"CSE503",semester:"V",className:"CSE C",category:"Core",students:38,attendance:84,progress:65,status:"Active"},
+    {id:5,name:"Cloud Computing",code:"CSE704",semester:"VII",className:"CSE B",category:"Elective",students:41,attendance:87,progress:58,status:"Active"},
+    {id:6,name:"Software Engineering",code:"CSE505",semester:"V",className:"CSE A",category:"Core",students:42,attendance:87,progress:70,status:"Active"}
+  ];
+  const defaultStudents = [
+    {id:"111424104064",name:"Lakshmi Priya",department:"CSE",className:"CSE A",year:3,attendance:94,performance:91,status:"Active",email:"lakshmipriya@student.edu",phone:"9876500001"},
+    {id:"111424104002",name:"Ananya",department:"CSE",className:"CSE A",year:3,attendance:90,performance:88,status:"Active",email:"ananya@student.edu",phone:"9876500002"},
+    {id:"111424104018",name:"Harini",department:"CSE",className:"CSE B",year:3,attendance:87,performance:82,status:"Active",email:"harini@student.edu",phone:"9876500003"},
+    {id:"111424104031",name:"Karthik",department:"CSE",className:"CSE A",year:3,attendance:72,performance:61,status:"At-Risk",email:"karthik@student.edu",phone:"9876500004"},
+    {id:"111424104007",name:"Arun",department:"IT",className:"IT A",year:3,attendance:81,performance:74,status:"Active",email:"arun@student.edu",phone:"9876500005"},
+    {id:"111424104045",name:"Nithya",department:"CSE",className:"CSE C",year:3,attendance:92,performance:86,status:"Active",email:"nithya@student.edu",phone:"9876500006"},
+    {id:"111424104052",name:"Rahul",department:"ECE",className:"CSE C",year:2,attendance:68,performance:55,status:"At-Risk",email:"rahul@student.edu",phone:"9876500007"},
+    {id:"111424104023",name:"Divya",department:"CSE",className:"CSE B",year:3,attendance:89,performance:79,status:"Active",email:"divya@student.edu",phone:"9876500008"},
+    {id:"111424104011",name:"Suresh",department:"IT",className:"IT A",year:2,attendance:76,performance:66,status:"Active",email:"suresh@student.edu",phone:"9876500009"},
+    {id:"111424104038",name:"Meena",department:"CSE",className:"CSE B",year:4,attendance:0,performance:0,status:"Inactive",email:"meena@student.edu",phone:"9876500010"}
+  ];
+
+  function load(key, fallback) {
+    try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw); } catch (e) {}
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+
+  let courses = load("facultyCourses", defaultCourses);
+  const students = load("facultyStudents", defaultStudents);
+  let attendance = load("facultyAttendance", {});     // { "courseId|class|date": { studentId: "P" | "A" } }
+  const profile = load("facultyProfile", {fullName:"Dr. Priya Raman", department:"Computer Science and Engineering"});
+
+  const $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function initialsOf(name) { return name.split(" ").filter(Boolean).slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase(); }
+  function level(v) { return v >= 80 ? "good" : v >= 65 ? "mid" : "low"; }
+  function level2(v) { return v >= 80 ? "good2" : v >= 65 ? "mid2" : "low2"; }
+  function saveAttendance() { localStorage.setItem("facultyAttendance", JSON.stringify(attendance)); }
+  function showToast(msg, type) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + (type || "");
+    setTimeout(function () { t.classList.remove("show"); }, 2400);
+  }
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function prettyDate(v) {
+    const d = new Date(v + "T00:00:00");
+    return isNaN(d) ? v : d.toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"});
+  }
+
+  /* ---------- Top bar ---------- */
+  const facInitials = profile.fullName.split(" ").filter(function (p) { return p && p.indexOf(".") === -1; }).slice(0, 2).map(function (p) { return p[0]; }).join("").toUpperCase();
+  $("topAvatar").textContent = facInitials || "FM";
+  $("topName").textContent = profile.fullName;
+  $("topDept").textContent = profile.department.replace("Computer Science and Engineering", "CSE Department");
+
+  let notifications = [];
+  try { notifications = JSON.parse(localStorage.getItem("facultyNotifications")) || []; } catch (e) {}
+  const unread = notifications.filter(function (n) { return !n.read; }).length;
+  $("badge").textContent = unread;
+  $("badge").style.display = unread ? "grid" : "none";
+  $("notifList").innerHTML = notifications.length ? notifications.map(function (n) {
+    return '<div class="notif ' + (n.read ? "" : "unread") + '">' + esc(n.text) + '<small>' + esc(n.time) + '</small></div>';
+  }).join("") : '<div class="notif">No notifications yet.</div>';
+  $("bellBtn").addEventListener("click", function (e) { e.stopPropagation(); $("dropdown").classList.toggle("show"); });
+  $("dropdown").addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { $("dropdown").classList.remove("show"); });
+
+  /* ---------- Selectors ---------- */
+  const courseSel = $("courseSel"), classSel = $("classSel"), dateSel = $("dateSel");
+
+  courseSel.innerHTML = courses.length
+    ? courses.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + ' (' + esc(c.code) + ')</option>'; }).join("")
+    : '<option value="">No courses available</option>';
+
+  const classNames = Array.from(new Set(
+    students.map(function (s) { return s.className; }).concat(courses.map(function (c) { return c.className; }))
+  )).sort();
+  classSel.innerHTML = classNames.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join("");
+
+  dateSel.value = todayStr();
+
+  function selectedCourse() { return courses.find(function (c) { return String(c.id) === courseSel.value; }); }
+  function syncClassWithCourse() {
+    const c = selectedCourse();
+    if (c && classNames.indexOf(c.className) !== -1) classSel.value = c.className;
+  }
+
+  // Course chosen from the Courses page (?course=ID)
+  const urlCourse = new URLSearchParams(window.location.search).get("course");
+  if (urlCourse && courses.some(function (c) { return String(c.id) === urlCourse; })) courseSel.value = urlCourse;
+  syncClassWithCourse();
+
+  /* ---------- Core helpers ---------- */
+  function sessionKey() { return courseSel.value + "|" + classSel.value + "|" + dateSel.value; }
+  function classStudents() {
+    return students.filter(function (s) { return s.className === classSel.value && s.status !== "Inactive"; });
+  }
+  function currentSession() { return attendance[sessionKey()] || {}; }
+
+  // Overall percentage of a student for this course + class (all saved dates)
+  function studentPercent(s) {
+    const prefix = courseSel.value + "|" + classSel.value + "|";
+    let p = 0, t = 0;
+    Object.keys(attendance).forEach(function (k) {
+      if (k.indexOf(prefix) !== 0) return;
+      const v = attendance[k][s.id];
+      if (v === "P") { p++; t++; } else if (v === "A") { t++; }
+    });
+    return t ? {value: Math.round(p / t * 100), base: false} : {value: s.attendance, base: true};
+  }
+
+  /* ---------- Render ---------- */
+  function render() {
+    const list = classStudents();
+    const session = currentSession();
+    const q = $("searchInput").value.trim().toLowerCase();
+    const shown = list.filter(function (s) { return !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q); });
+
+    const course = selectedCourse();
+    $("listTitle").textContent = (course ? course.name : "Student List") + " • " + classSel.value;
+
+    // table
+    $("emptyBox").style.display = shown.length ? "none" : "block";
+    $("emptyText").textContent = list.length ? "No student matches your search." : "No students found in this class.";
+    $("tableBody").innerHTML = shown.map(function (s) {
+      const pc = studentPercent(s);
+      const mark = session[s.id];
+      return '<tr>' +
+        '<td><div class="stu"><div class="s-av">' + esc(initialsOf(s.name)) + '</div><b>' + esc(s.name) + '</b></div></td>' +
+        '<td>' + esc(s.id) + '</td>' +
+        '<td><button class="mark p ' + (mark === "P" ? "on" : "") + '" data-act="P" data-id="' + esc(s.id) + '" title="Present">P</button></td>' +
+        '<td><button class="mark a ' + (mark === "A" ? "on" : "") + '" data-act="A" data-id="' + esc(s.id) + '" title="Absent">A</button></td>' +
+        '<td><div class="pbar"><div class="t"><i class="' + level(pc.value) + '" style="width:' + pc.value + '%"></i></div>' + pc.value + '%' + (pc.base ? ' <span class="base">(base)</span>' : '') + '</div></td>' +
+        '</tr>';
+    }).join("");
+
+    // summary
+    let present = 0, absent = 0;
+    list.forEach(function (s) {
+      if (session[s.id] === "P") present++;
+      else if (session[s.id] === "A") absent++;
+    });
+    const total = list.length;
+    const pct = total ? Math.round(present / total * 100) : 0;
+    $("cPresent").textContent = present;
+    $("cAbsent").textContent = absent;
+    $("cUnmarked").textContent = total - present - absent;
+    $("ringPct").textContent = pct + "%";
+    const color = pct >= 80 ? "#2e8b57" : pct >= 65 ? "#d98449" : "#c0392b";
+    $("ring").style.background = "conic-gradient(" + color + " " + pct + "%, #f0e8de 0)";
+
+    renderSessions(list);
+  }
+
+  function renderSessions(list) {
+    const prefix = courseSel.value + "|" + classSel.value + "|";
+    const items = Object.keys(attendance).filter(function (k) { return k.indexOf(prefix) === 0; }).map(function (k) {
+      const rec = attendance[k];
+      const p = Object.keys(rec).filter(function (id) { return rec[id] === "P"; }).length;
+      const total = list.length || Object.keys(rec).length;
+      return {date: k.split("|")[2], pct: total ? Math.round(p / total * 100) : 0, p: p, total: total};
+    }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 6);
+
+    $("sessionList").innerHTML = items.length ? items.map(function (s) {
+      return '<div class="sess ' + (s.date === dateSel.value ? "cur" : "") + '" data-date="' + s.date + '">' +
+        '<div><b>' + prettyDate(s.date) + '</b><br><small style="color:var(--muted)">' + s.p + ' of ' + s.total + ' present</small></div>' +
+        '<span class="pill ' + level2(s.pct) + '">' + s.pct + '%</span></div>';
+    }).join("") : '<div style="color:var(--muted);font-size:13px">No saved sessions for this course and class yet.</div>';
+  }
+
+  /* ---------- Interactions ---------- */
+  $("tableBody").addEventListener("click", function (e) {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    if (!dateSel.value) { showToast("Please select a date first.", "bad"); return; }
+    const key = sessionKey();
+    const rec = attendance[key] || {};
+    const id = btn.dataset.id;
+    if (rec[id] === btn.dataset.act) delete rec[id];      // click again to un-mark
+    else rec[id] = btn.dataset.act;
+    if (Object.keys(rec).length) attendance[key] = rec; else delete attendance[key];
+    saveAttendance();
+    render();
+  });
+
+  $("allPresent").addEventListener("click", function () {
+    if (!dateSel.value) { showToast("Please select a date first.", "bad"); return; }
+    const list = classStudents();
+    if (!list.length) { showToast("No students in this class.", "bad"); return; }
+    const rec = {};
+    list.forEach(function (s) { rec[s.id] = "P"; });
+    attendance[sessionKey()] = rec;
+    saveAttendance();
+    render();
+    showToast("All " + list.length + " students marked present.", "ok");
+  });
+
+  $("resetBtn").addEventListener("click", function () {
+    if (!attendance[sessionKey()]) { showToast("Nothing to reset for this date."); return; }
+    if (confirm("Clear all attendance marks for this class on " + prettyDate(dateSel.value) + "?")) {
+      delete attendance[sessionKey()];
+      saveAttendance();
+      render();
+      showToast("Attendance cleared.", "bad");
+    }
+  });
+
+  $("saveBtn").addEventListener("click", function () {
+    const course = selectedCourse();
+    if (!course) { showToast("Please select a course.", "bad"); return; }
+    if (!dateSel.value) { showToast("Please select a date.", "bad"); return; }
+    const rec = currentSession();
+    if (!Object.keys(rec).length) { showToast("Mark at least one student before saving.", "bad"); return; }
+
+    // Update the course attendance % from all saved records of this course
+    const prefix = course.id + "|";
+    let p = 0, t = 0;
+    Object.keys(attendance).forEach(function (k) {
+      if (k.indexOf(prefix) !== 0) return;
+      Object.keys(attendance[k]).forEach(function (id) {
+        if (attendance[k][id] === "P") { p++; t++; } else if (attendance[k][id] === "A") { t++; }
+      });
+    });
+    if (t) {
+      courses = courses.map(function (c) { return c.id === course.id ? Object.assign({}, c, {attendance: Math.round(p / t * 100)}) : c; });
+      localStorage.setItem("facultyCourses", JSON.stringify(courses));
+    }
+    saveAttendance();
+    showToast("Attendance saved for " + prettyDate(dateSel.value) + ".", "ok");
+  });
+
+  $("sessionList").addEventListener("click", function (e) {
+    const row = e.target.closest(".sess");
+    if (row) { dateSel.value = row.dataset.date; render(); }
+  });
+
+  courseSel.addEventListener("change", function () { syncClassWithCourse(); render(); });
+  classSel.addEventListener("change", render);
+  dateSel.addEventListener("change", render);
+  $("searchInput").addEventListener("input", render);
+
+  render();
+
+  /* ---------- Mobile sidebar ---------- */
+  function toggleMenu(open) { $("sidebar").classList.toggle("open", open); $("overlay").classList.toggle("show", open); }
+  $("menuBtn").addEventListener("click", function () { toggleMenu(true); });
+  $("overlay").addEventListener("click", function () { toggleMenu(false); });
+
+  /* ---------- Logout ---------- */
+  $("logoutBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("facultyLoggedIn");
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>
